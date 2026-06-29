@@ -509,14 +509,25 @@
         <div class="card resp-table">
           <div class="card-title"><span>📋</span> Stock Added History</div>
           <div class="filter-bar">
-            <div class="search-input-wrapper">
+            <div class="form-group-inline" style="min-width:130px">
+              <label class="form-label">From Date</label>
+              <input type="date" class="form-input" id="ah_from" onchange="renderAddHistory()" />
+            </div>
+            <div class="form-group-inline" style="min-width:130px">
+              <label class="form-label">To Date</label>
+              <input type="date" class="form-input" id="ah_to" onchange="renderAddHistory()" />
+            </div>
+            <div class="search-input-wrapper" style="align-self:flex-end">
               <span class="search-icon">🔍</span>
-              <input type="text" class="form-input" placeholder="Search product…" oninput="renderAddHistory(this.value)" />
+              <input type="text" class="form-input" id="ah_search" placeholder="Search product…" oninput="renderAddHistory(this.value)" />
+            </div>
+            <div class="form-group-inline no-print" style="align-self:flex-end">
+              <button class="btn btn-outline btn-sm" onclick="exportAddHistoryExcel()">📊 Excel</button>
             </div>
           </div>
           <div class="table-wrapper">
             <table>
-              <thead><tr><th>Date</th><th>Product Name</th><th>Qty Added</th><th>Added By</th></tr></thead>
+              <thead><tr><th>Date</th><th>Product Name</th><th>Qty Added</th><th>Added By</th><th class="no-print">Actions</th></tr></thead>
               <tbody id="addHistoryTable"></tbody>
             </table>
           </div>
@@ -566,15 +577,16 @@
             </div>
             <div class="form-group-inline">
               <label class="form-label">Remark</label>
-              <select class="form-input" id="ip_remark">
-                <option value="">-- Select Remark --</option>
-                <option>Kitchen Requirement</option>
-                <option>Housekeeping Requirement</option>
-                <option>Restaurant Requirement</option>
-                <option>Emergency Purchase</option>
-                <option>Event Consumption</option>
-                <option>Other Remarks</option>
-              </select>
+              <input type="text" class="form-input" id="ip_remark" list="remark_options" placeholder="Type or select remark..." />
+              <datalist id="remark_options">
+                <option value="Kitchen Requirement"></option>
+                <option value="Housekeeping Requirement"></option>
+                <option value="Restaurant Requirement"></option>
+                <option value="Emergency Purchase"></option>
+                <option value="Event Consumption"></option>
+                <option value="Monthly Function"></option>
+                <option value="Other Remarks"></option>
+              </datalist>
             </div>
           </div>
           <div style="margin-top:16px" class="btn-group">
@@ -585,14 +597,25 @@
         <div class="card resp-table">
           <div class="card-title"><span>📋</span> Issue History</div>
           <div class="filter-bar">
-            <div class="search-input-wrapper">
+            <div class="form-group-inline" style="min-width:130px">
+              <label class="form-label">From Date</label>
+              <input type="date" class="form-input" id="ih_from" onchange="renderIssueHistory()" />
+            </div>
+            <div class="form-group-inline" style="min-width:130px">
+              <label class="form-label">To Date</label>
+              <input type="date" class="form-input" id="ih_to" onchange="renderIssueHistory()" />
+            </div>
+            <div class="search-input-wrapper" style="align-self:flex-end">
               <span class="search-icon">🔍</span>
-              <input type="text" class="form-input" placeholder="Search…" oninput="renderIssueHistory(this.value)" />
+              <input type="text" class="form-input" id="ih_search" placeholder="Search…" oninput="renderIssueHistory(this.value)" />
+            </div>
+            <div class="form-group-inline no-print" style="align-self:flex-end">
+              <button class="btn btn-outline btn-sm" onclick="exportIssueHistoryExcel()">📊 Excel</button>
             </div>
           </div>
           <div class="table-wrapper">
             <table>
-              <thead><tr><th>Date</th><th>Product</th><th>Property</th><th>Qty</th><th>Closing Bal.</th><th>Remark</th><th>By</th></tr></thead>
+              <thead><tr><th>Date</th><th>Product</th><th>Property</th><th>Qty</th><th>Closing Bal.</th><th>Remark</th><th>By</th><th class="no-print">Actions</th></tr></thead>
               <tbody id="issueHistoryTable"></tbody>
             </table>
           </div>
@@ -948,6 +971,12 @@ function showApp() {
   document.getElementById('headerUserRole').textContent = currentUser.role === 'admin' ? 'Administrator' : 'Staff';
   document.getElementById('userAvatar').textContent = (currentUser.name || currentUser.email)[0].toUpperCase();
   document.getElementById('adminOnlyNav').style.display = currentUser.role === 'admin' ? 'block' : 'none';
+  
+  // Staff restrictions: hide Add Product and Issue Product buttons from sidebar
+  const isStaff = currentUser.role === 'staff';
+  document.getElementById('nav-addProduct').style.display = isStaff ? 'none' : 'flex';
+  document.getElementById('nav-issueProduct').style.display = isStaff ? 'none' : 'flex';
+  
   setDefaultDates();
   renderAll();
   showPage('dashboard');
@@ -968,6 +997,12 @@ let currentPage = 'dashboard';
 let reportTab   = 'all';
 
 function showPage(page) {
+  // Staff cannot access addProduct or issueProduct pages directly
+  if ((page === 'addProduct' || page === 'issueProduct') && currentUser && currentUser.role === 'staff') {
+    showPage('dashboard');
+    toast('❌ Access denied: Staff cannot add or issue products.', 'error');
+    return;
+  }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-'+page)?.classList.add('active');
@@ -1049,7 +1084,13 @@ function validateIssueQty() {
 }
 
 // ── Add Product ───────────────────────────────────────────────────────
+let editingAddId = null;
+
 async function addProduct() {
+  if (currentUser && currentUser.role === 'staff') {
+    toast('❌ Access denied: Staff cannot add products.', 'error');
+    return;
+  }
   const date     = document.getElementById('ap_date').value;
   const product  = document.getElementById('ap_product').value.trim();
   const qty      = parseInt(document.getElementById('ap_qty').value)||0;
@@ -1086,18 +1127,189 @@ function clearAddForm() {
 
 function renderAddHistory(search='') {
   const tbody = document.getElementById('addHistoryTable');
-  const filtered = cache.addHistory.filter(r=>!search||r.product.toLowerCase().includes(search.toLowerCase()));
-  tbody.innerHTML = filtered.length ? filtered.map(r=>`
+  const from = document.getElementById('ah_from')?.value;
+  const to = document.getElementById('ah_to')?.value;
+  const searchVal = search || document.getElementById('ah_search')?.value || '';
+
+  const filtered = cache.addHistory.filter(r => {
+    if (from && r.date < from) return false;
+    if (to && r.date > to) return false;
+    if (searchVal && !r.product.toLowerCase().includes(searchVal.toLowerCase())) return false;
+    return true;
+  });
+
+  tbody.innerHTML = filtered.length ? filtered.map(r => `
     <tr>
       <td data-label="Date">${formatDate(r.date)}</td>
       <td data-label="Product"><strong>${r.product}</strong></td>
       <td data-label="Qty Added"><span class="qty-pill">${r.qty}</span></td>
       <td data-label="Added By">${r.user}</td>
-    </tr>`).join('') : `<tr><td colspan="4"><div class="empty-state"><div class="icon">📦</div><p>No stock additions yet</p></div></td></tr>`;
+      <td data-label="Actions" class="no-print">
+        <div class="btn-group" style="gap:4px">
+          <button class="btn btn-outline btn-sm" onclick="startEditAddHistory('${r.id}')" style="min-height:30px;padding:4px 8px;font-size:11px">✏️ Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteAddHistory('${r.id}')" style="min-height:30px;padding:4px 8px;font-size:11px">🗑️ Delete</button>
+        </div>
+      </td>
+    </tr>`).join('') : `<tr><td colspan="5"><div class="empty-state"><div class="icon">📦</div><p>No stock additions yet</p></div></td></tr>`;
+}
+
+// ── Add Product Edit / Delete ─────────────────────────────────────────
+function startEditAddHistory(id) {
+  const entry = cache.addHistory.find(h => h.id === id);
+  if (!entry) return;
+  
+  editingAddId = id;
+  document.getElementById('ap_date').value = entry.date;
+  document.getElementById('ap_product').value = entry.product;
+  document.getElementById('ap_qty').value = entry.qty;
+  
+  const addBtn = document.getElementById('addProductBtn');
+  addBtn.innerHTML = '💾 Update Entry';
+  addBtn.className = 'btn btn-teal';
+  addBtn.onclick = updateAddProduct;
+  
+  let cancelBtn = document.getElementById('cancelAddEditBtn');
+  if (!cancelBtn) {
+    cancelBtn = document.createElement('button');
+    cancelBtn.id = 'cancelAddEditBtn';
+    cancelBtn.className = 'btn btn-outline';
+    cancelBtn.innerHTML = 'Cancel Edit';
+    cancelBtn.onclick = cancelAddEdit;
+    addBtn.parentNode.appendChild(cancelBtn);
+  }
+  
+  document.getElementById('ap_date').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelAddEdit() {
+  editingAddId = null;
+  const addBtn = document.getElementById('addProductBtn');
+  addBtn.innerHTML = '➕ Add to Inventory';
+  addBtn.className = 'btn btn-ocean';
+  addBtn.onclick = addProduct;
+  
+  const cancelBtn = document.getElementById('cancelAddEditBtn');
+  if (cancelBtn) cancelBtn.remove();
+  
+  clearAddForm();
+}
+
+async function updateAddProduct() {
+  if (!editingAddId) return;
+  const date = document.getElementById('ap_date').value;
+  const product = document.getElementById('ap_product').value.trim();
+  const qty = parseInt(document.getElementById('ap_qty').value) || 0;
+  
+  if (!date || !product || qty <= 0) {
+    alert('Please fill all fields with valid values.');
+    return;
+  }
+  
+  const entry = cache.addHistory.find(h => h.id === editingAddId);
+  if (!entry) return;
+  
+  const addBtn = document.getElementById('addProductBtn');
+  addBtn.disabled = true;
+  addBtn.innerHTML = '<span class="inline-spinner"></span> Updating...';
+  
+  try {
+    const oldQty = entry.qty;
+    const oldProduct = entry.product;
+    
+    // Revert old quantity from old product
+    cache.stock[oldProduct] = Math.max(0, (cache.stock[oldProduct] || 0) - oldQty);
+    // Add new quantity to new product
+    cache.stock[product] = (cache.stock[product] || 0) + qty;
+    
+    await db.collection('config').doc('stock').set(cache.stock);
+    
+    const userName = currentUser.name || currentUser.email;
+    const updatedEntry = { date, product, qty, user: userName };
+    await db.collection('addHistory').doc(editingAddId).update(updatedEntry);
+    
+    Object.assign(entry, updatedEntry);
+    
+    const ts = new Date().toISOString();
+    const auditEntry = { datetime: ts, action: 'Add History Edited', product, qty: `${oldQty} ➔ ${qty}`, property: '-', remark: `Edited entry of ${oldProduct}`, user: userName, timestamp: ts };
+    const aRef = await db.collection('audit').add(auditEntry);
+    cache.audit.unshift({ id: aRef.id, ...auditEntry });
+    
+    toast("Stock entry updated successfully.", "success");
+    cancelAddEdit();
+    renderAll();
+  } catch (e) {
+    console.error(e);
+    toast("❌ Failed to update entry.", "error");
+    addBtn.disabled = false;
+    addBtn.innerHTML = '💾 Update Entry';
+  }
+}
+
+async function deleteAddHistory(id) {
+  const pw = prompt("Enter password (9999) to delete this entry:");
+  if (pw !== "9999") {
+    if (pw !== null) toast("❌ Incorrect password.", "error");
+    return;
+  }
+  const entry = cache.addHistory.find(h => h.id === id);
+  if (!entry) return;
+  
+  if (confirm(`Are you sure you want to delete this addition of ${entry.qty} x ${entry.product}?`)) {
+    try {
+      const currentStock = cache.stock[entry.product] || 0;
+      const newStock = Math.max(0, currentStock - entry.qty);
+      
+      cache.stock[entry.product] = newStock;
+      await db.collection('config').doc('stock').set(cache.stock);
+      await db.collection('addHistory').doc(id).delete();
+      
+      const ts = new Date().toISOString();
+      const userName = currentUser.name || currentUser.email;
+      const auditEntry = { datetime: ts, action: 'Add History Deleted', product: entry.product, qty: entry.qty, property: '-', remark: `Deleted addition from ${entry.date}`, user: userName, timestamp: ts };
+      const aRef = await db.collection('audit').add(auditEntry);
+      cache.audit.unshift({ id: aRef.id, ...auditEntry });
+      
+      cache.addHistory = cache.addHistory.filter(h => h.id !== id);
+      
+      toast("Stock addition deleted successfully.", "success");
+      renderAll();
+    } catch (e) {
+      console.error(e);
+      toast("❌ Failed to delete entry. Check connection.", "error");
+    }
+  }
+}
+
+function exportAddHistoryExcel() {
+  const from = document.getElementById('ah_from')?.value;
+  const to = document.getElementById('ah_to')?.value;
+  const searchVal = document.getElementById('ah_search')?.value || '';
+  
+  const filtered = cache.addHistory.filter(r => {
+    if (from && r.date < from) return false;
+    if (to && r.date > to) return false;
+    if (searchVal && !r.product.toLowerCase().includes(searchVal.toLowerCase())) return false;
+    return true;
+  });
+  
+  const data = [['Date', 'Product Name', 'Quantity Added', 'Added By']];
+  filtered.forEach(r => data.push([r.date, r.product, r.qty, r.user]));
+  
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Stock Added History');
+  XLSX.writeFile(wb, `Sea_Rock_Stock_Added_${new Date().toISOString().split('T')[0]}.xlsx`);
+  toast('Stock addition history exported', 'success');
 }
 
 // ── Issue Product ─────────────────────────────────────────────────────
+let editingIssueId = null;
+
 async function issueProduct() {
+  if (currentUser && currentUser.role === 'staff') {
+    toast('❌ Access denied: Staff cannot issue products.', 'error');
+    return;
+  }
   const date     = document.getElementById('ip_date').value;
   const product  = document.getElementById('ip_product').value.trim();
   const property = document.getElementById('ip_property').value;
@@ -1144,8 +1356,18 @@ function clearIssueForm() {
 
 function renderIssueHistory(search='') {
   const tbody = document.getElementById('issueHistoryTable');
-  const filtered = cache.issues.filter(r=>!search||r.product.toLowerCase().includes(search.toLowerCase())||r.property.toLowerCase().includes(search.toLowerCase()));
-  tbody.innerHTML = filtered.length ? filtered.map(r=>`
+  const from = document.getElementById('ih_from')?.value;
+  const to = document.getElementById('ih_to')?.value;
+  const searchVal = search || document.getElementById('ih_search')?.value || '';
+
+  const filtered = cache.issues.filter(r => {
+    if (from && r.date < from) return false;
+    if (to && r.date > to) return false;
+    if (searchVal && !r.product.toLowerCase().includes(searchVal.toLowerCase()) && !r.property.toLowerCase().includes(searchVal.toLowerCase())) return false;
+    return true;
+  });
+
+  tbody.innerHTML = filtered.length ? filtered.map(r => `
     <tr>
       <td data-label="Date">${formatDate(r.date)}</td>
       <td data-label="Product"><strong>${r.product}</strong></td>
@@ -1154,7 +1376,173 @@ function renderIssueHistory(search='') {
       <td data-label="Closing Bal."><span class="qty-pill ${r.closingBalance<=0?'empty':r.closingBalance<=10?'low':''}">${r.closingBalance}</span></td>
       <td data-label="Remark">${r.remark}</td>
       <td data-label="By">${r.user}</td>
-    </tr>`).join('') : `<tr><td colspan="7"><div class="empty-state"><div class="icon">🏷️</div><p>No issues recorded yet</p></div></td></tr>`;
+      <td data-label="Actions" class="no-print">
+        <div class="btn-group" style="gap:4px">
+          <button class="btn btn-outline btn-sm" onclick="startEditIssueHistory('${r.id}')" style="min-height:30px;padding:4px 8px;font-size:11px">✏️ Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteIssueHistory('${r.id}')" style="min-height:30px;padding:4px 8px;font-size:11px">🗑️ Delete</button>
+        </div>
+      </td>
+    </tr>`).join('') : `<tr><td colspan="8"><div class="empty-state"><div class="icon">🏷️</div><p>No issues recorded yet</p></div></td></tr>`;
+}
+
+// ── Issue Product Edit / Delete ───────────────────────────────────────
+function startEditIssueHistory(id) {
+  const entry = cache.issues.find(i => i.id === id);
+  if (!entry) return;
+  
+  editingIssueId = id;
+  document.getElementById('ip_date').value = entry.date;
+  document.getElementById('ip_product').value = entry.product;
+  document.getElementById('ip_property').value = entry.property;
+  document.getElementById('ip_qty').value = entry.qty;
+  document.getElementById('ip_remark').value = entry.remark;
+  
+  const issueBtn = document.getElementById('issueProductBtn');
+  issueBtn.innerHTML = '💾 Update Issue';
+  issueBtn.className = 'btn btn-teal';
+  issueBtn.onclick = updateIssueProduct;
+  
+  let cancelBtn = document.getElementById('cancelIssueEditBtn');
+  if (!cancelBtn) {
+    cancelBtn = document.createElement('button');
+    cancelBtn.id = 'cancelIssueEditBtn';
+    cancelBtn.className = 'btn btn-outline';
+    cancelBtn.innerHTML = 'Cancel Edit';
+    cancelBtn.onclick = cancelIssueEdit;
+    issueBtn.parentNode.appendChild(cancelBtn);
+  }
+  
+  updateIssueBalance();
+  document.getElementById('ip_date').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelIssueEdit() {
+  editingIssueId = null;
+  const issueBtn = document.getElementById('issueProductBtn');
+  issueBtn.innerHTML = '✅ Issue Product';
+  issueBtn.className = 'btn btn-teal';
+  issueBtn.onclick = issueProduct;
+  
+  const cancelBtn = document.getElementById('cancelIssueEditBtn');
+  if (cancelBtn) cancelBtn.remove();
+  
+  clearIssueForm();
+}
+
+async function updateIssueProduct() {
+  if (!editingIssueId) return;
+  const date = document.getElementById('ip_date').value;
+  const product = document.getElementById('ip_product').value.trim();
+  const property = document.getElementById('ip_property').value;
+  const qty = parseInt(document.getElementById('ip_qty').value) || 0;
+  const remark = document.getElementById('ip_remark').value;
+  
+  if (!date || !product || !property || qty <= 0) {
+    alert('Please fill all required fields.');
+    return;
+  }
+  
+  const entry = cache.issues.find(i => i.id === editingIssueId);
+  if (!entry) return;
+  
+  const oldProduct = entry.product;
+  const oldQty = entry.qty;
+  
+  const tempStock = (cache.stock[oldProduct] || 0) + (oldProduct === product ? oldQty : 0);
+  const currentAvailableForNewProduct = product === oldProduct ? tempStock : (cache.stock[product] || 0);
+  
+  if (qty > currentAvailableForNewProduct) {
+    alert(`Insufficient stock. Available: ${currentAvailableForNewProduct}, Requested: ${qty}`);
+    return;
+  }
+  
+  const issueBtn = document.getElementById('issueProductBtn');
+  issueBtn.disabled = true;
+  issueBtn.innerHTML = '<span class="inline-spinner"></span> Updating...';
+  
+  try {
+    cache.stock[oldProduct] = (cache.stock[oldProduct] || 0) + oldQty;
+    cache.stock[product] = Math.max(0, (cache.stock[product] || 0) - qty);
+    
+    await db.collection('config').doc('stock').set(cache.stock);
+    
+    const userName = currentUser.name || currentUser.email;
+    const updatedEntry = { date, product, property, qty, closingBalance: cache.stock[product], remark: remark || 'N/A', user: userName };
+    await db.collection('issues').doc(editingIssueId).update(updatedEntry);
+    
+    Object.assign(entry, updatedEntry);
+    
+    const ts = new Date().toISOString();
+    const auditEntry = { datetime: ts, action: 'Issue History Edited', product, qty: `${oldQty} ➔ ${qty}`, property, remark: remark || 'N/A', user: userName, timestamp: ts };
+    const aRef = await db.collection('audit').add(auditEntry);
+    cache.audit.unshift({ id: aRef.id, ...auditEntry });
+    
+    toast("Issue entry updated successfully.", "success");
+    cancelIssueEdit();
+    renderAll();
+  } catch (e) {
+    console.error(e);
+    toast("❌ Failed to update issue entry.", "error");
+    issueBtn.disabled = false;
+    issueBtn.innerHTML = '💾 Update Issue';
+  }
+}
+
+async function deleteIssueHistory(id) {
+  const pw = prompt("Enter password (9999) to delete this entry:");
+  if (pw !== "9999") {
+    if (pw !== null) toast("❌ Incorrect password.", "error");
+    return;
+  }
+  const entry = cache.issues.find(i => i.id === id);
+  if (!entry) return;
+  
+  if (confirm(`Are you sure you want to delete this issue of ${entry.qty} x ${entry.product} to ${entry.property}?`)) {
+    try {
+      const currentStock = cache.stock[entry.product] || 0;
+      const newStock = currentStock + entry.qty;
+      
+      cache.stock[entry.product] = newStock;
+      await db.collection('config').doc('stock').set(cache.stock);
+      await db.collection('issues').doc(id).delete();
+      
+      const ts = new Date().toISOString();
+      const userName = currentUser.name || currentUser.email;
+      const auditEntry = { datetime: ts, action: 'Issue History Deleted', product: entry.product, qty: entry.qty, property: entry.property, remark: `Deleted issue from ${entry.date}`, user: userName, timestamp: ts };
+      const aRef = await db.collection('audit').add(auditEntry);
+      cache.audit.unshift({ id: aRef.id, ...auditEntry });
+      
+      cache.issues = cache.issues.filter(i => i.id !== id);
+      
+      toast("Issue entry deleted successfully.", "success");
+      renderAll();
+    } catch (e) {
+      console.error(e);
+      toast("❌ Failed to delete entry. Check connection.", "error");
+    }
+  }
+}
+
+function exportIssueHistoryExcel() {
+  const from = document.getElementById('ih_from')?.value;
+  const to = document.getElementById('ih_to')?.value;
+  const searchVal = document.getElementById('ih_search')?.value || '';
+  
+  const filtered = cache.issues.filter(r => {
+    if (from && r.date < from) return false;
+    if (to && r.date > to) return false;
+    if (searchVal && !r.product.toLowerCase().includes(searchVal.toLowerCase()) && !r.property.toLowerCase().includes(searchVal.toLowerCase())) return false;
+    return true;
+  });
+  
+  const data = [['Date', 'Product Name', 'Property', 'Quantity Issued', 'Closing Balance', 'Remark', 'Issued By']];
+  filtered.forEach(r => data.push([r.date, r.product, r.property, r.qty, r.closingBalance, r.remark, r.user]));
+  
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Issue History');
+  XLSX.writeFile(wb, `Sea_Rock_Issues_History_${new Date().toISOString().split('T')[0]}.xlsx`);
+  toast('Issue history exported', 'success');
 }
 
 // ── Stock Balance ─────────────────────────────────────────────────────
