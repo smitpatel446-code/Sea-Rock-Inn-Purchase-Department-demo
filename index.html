@@ -768,8 +768,23 @@
 // =====================================================================
 //  IMPORTANT: db, auth, secondaryAuth are declared in firebase-config.js
 //  This file contains NO API keys. All Firebase references come from
-//  firebase-config.js which is loaded before this script.
+//  firebase-config.js which is loaded BEFORE this script.
 // =====================================================================
+
+// ── Guard: ensure firebase-config.js actually loaded ─────────────────
+if (typeof firebase === 'undefined' || typeof db === 'undefined' || typeof auth === 'undefined') {
+  // firebase-config.js failed to load (wrong path, browser block, etc.)
+  window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('loadingOverlay').style.display = 'none';
+    document.getElementById('loginScreen').classList.add('show');
+    document.getElementById('loginAlert').innerHTML =
+      '<div class="alert alert-error">❌ <strong>firebase-config.js not found.</strong><br>'
+    + 'Make sure <code>firebase-config.js</code> and this HTML file are '
+    + 'in the <strong>same folder</strong>, then refresh.</div>';
+  });
+  // Stop executing the rest of this script
+  throw new Error('firebase-config.js did not load — stopping app init.');
+}
 
 // ── In-memory cache (populated from Firestore after login) ───────────
 let cache = {
@@ -783,31 +798,32 @@ let cache = {
 let currentUser = null;  // { uid, email, name, role }
 
 // ── Auth State Observer ──────────────────────────────────────────────
-// Fired automatically when user signs in / out / page refreshes.
+// Firebase fires this automatically on page load AND on sign-in / sign-out.
 auth.onAuthStateChanged(async (firebaseUser) => {
   if (firebaseUser) {
-    // User already signed in (e.g. page refresh with active session)
     showLoading(true);
     try {
       const profile = await getProfile(firebaseUser.uid);
       if (!profile) {
-        // Auth exists but no Firestore profile → deny access
         await auth.signOut();
-        showError('Your account profile was not found. Contact admin.');
         showLoading(false);
         showLogin();
+        showError('Account profile not found in database. Ask your admin to add your profile in Firestore → userProfiles.');
         return;
       }
       currentUser = { uid: firebaseUser.uid, email: firebaseUser.email, ...profile };
       await loadAllData();
       showApp();
     } catch (e) {
-      console.error('Auth state error:', e);
+      console.error('onAuthStateChanged error:', e);
       showLoading(false);
       showLogin();
+      const hint = e.code === 'permission-denied'
+        ? 'Firestore rules are blocking access. Go to Firebase Console → Firestore → Rules and allow authenticated reads/writes.'
+        : `Firebase error: ${e.code || e.message}`;
+      showError(hint);
     }
   } else {
-    // No user signed in
     showLoading(false);
     showLogin();
   }
@@ -830,20 +846,30 @@ async function doLogin() {
   btn.innerHTML = '<span class="inline-spinner"></span> Signing in…';
 
   try {
-    // Firebase Auth handles the actual authentication — no Firestore query needed for login
+    // Firebase Auth (Email/Password) — does not require Firestore, works from file://
     await auth.signInWithEmailAndPassword(email, pass);
-    // onAuthStateChanged will fire automatically and complete the setup
+    // onAuthStateChanged fires automatically → profile fetch + data load happens there
   } catch (err) {
-    console.error('Login error:', err);
-    let msg = '❌ Sign in failed. Please try again.';
-    if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-      msg = '❌ Invalid email or password.';
-    } else if (err.code === 'auth/too-many-requests') {
-      msg = '❌ Too many failed attempts. Try again later.';
-    } else if (err.code === 'auth/network-request-failed') {
-      msg = '❌ No internet connection. Please check your network.';
-    } else if (err.code === 'auth/invalid-email') {
-      msg = '❌ Please enter a valid email address.';
+    console.error('Login error code:', err.code, '| message:', err.message);
+    let msg;
+    switch (err.code) {
+      case 'auth/user-not-found':
+      case 'auth/wrong-password':
+      case 'auth/invalid-credential':
+      case 'auth/invalid-login-credentials':
+        msg = '❌ Wrong email or password. Check your credentials and try again.'; break;
+      case 'auth/invalid-email':
+        msg = '❌ Please enter a valid email address (e.g. you@searockinn.com).'; break;
+      case 'auth/user-disabled':
+        msg = '❌ This account has been disabled. Contact your admin.'; break;
+      case 'auth/too-many-requests':
+        msg = '❌ Too many failed attempts. Please wait a few minutes and try again.'; break;
+      case 'auth/network-request-failed':
+        msg = '❌ Cannot reach Firebase servers. Check your internet connection.'; break;
+      case 'auth/operation-not-allowed':
+        msg = '❌ Email/Password sign-in is not enabled. Enable it in Firebase Console → Authentication → Sign-in method.'; break;
+      default:
+        msg = `❌ Sign-in failed (${err.code}). Check browser console for details.`;
     }
     alertEl.innerHTML = `<div class="alert alert-error">${msg}</div>`;
     btn.disabled = false;
@@ -877,14 +903,30 @@ async function loadAllData() {
     cache.audit      = auditSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     cache.users      = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
   } catch (err) {
-    console.error('Firestore load error:', err);
-    toast('Some data failed to load. Check internet.', 'error');
+    console.error('Firestore load error — code:', err.code, '| message:', err.message);
+    // Distinguish error types so the user knows exactly what to fix
+    if (err.code === 'permission-denied') {
+      // This is NOT a network error — it's Firestore Security Rules blocking access
+      throw Object.assign(err, { _handled: true });
+      // Re-throw so onAuthStateChanged catch block shows the rules guidance
+    } else if (err.code === 'unavailable') {
+      toast('❌ Firebase is temporarily unavailable. Check your internet and try refreshing.', 'error');
+    } else if (err.code === 'failed-precondition') {
+      toast('⚠️ Firestore index not ready yet. Queries may take a moment to work — wait a few seconds and refresh.', 'warning');
+    } else {
+      toast(`❌ Data load failed (${err.code || 'unknown'}). Open browser console (F12) for details.`, 'error');
+    }
   }
 }
 
 async function getProfile(uid) {
-  const doc = await db.collection('userProfiles').doc(uid).get();
-  return doc.exists ? doc.data() : null;
+  try {
+    const doc = await db.collection('userProfiles').doc(uid).get();
+    return doc.exists ? doc.data() : null;
+  } catch (err) {
+    console.error('getProfile error:', err.code, err.message);
+    throw err; // propagate so onAuthStateChanged catch block handles it
+  }
 }
 
 // ── UI helpers ────────────────────────────────────────────────────────
