@@ -4,11 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Sea Rock Inn — Purchase Department</title>
+
+<!-- Excel export library -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-<!-- Firebase SDK (compat) -->
+<!-- Firebase SDK (compat v9) — must load BEFORE firebase-config.js -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<!-- Firebase config + init (API keys live here, not in this file) -->
+<script src="firebase-config.js"></script>
 
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -18,11 +24,8 @@
     --navy-mid: #1a2f52;
     --navy-light: #243d6a;
     --ocean: #1e5fa8;
-    --ocean-light: #2e7bc4;
     --teal: #0e9488;
-    --teal-light: #14b8a6;
     --sand: #f5f0e8;
-    --sand-dark: #e8dfc8;
     --white: #ffffff;
     --text-primary: #0f1f3d;
     --text-secondary: #4a5568;
@@ -62,69 +65,49 @@
     z-index: 9999; flex-direction: column; gap: 16px;
   }
   #loadingOverlay .spinner {
-    width: 44px; height: 44px;
+    width: 48px; height: 48px;
     border: 4px solid rgba(255,255,255,0.2);
-    border-top-color: white;
-    border-radius: 50%;
+    border-top-color: white; border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
-  #loadingOverlay p { color: rgba(255,255,255,0.7); font-size: 14px; }
+  #loadingOverlay p { color: rgba(255,255,255,0.7); font-size: 14px; letter-spacing: 0.3px; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* ===== LOGIN ===== */
   #loginScreen {
     min-height: 100vh;
     background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 50%, var(--ocean) 100%);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-    padding: 16px;
+    display: none; align-items: center; justify-content: center;
+    position: relative; overflow: hidden; padding: 16px;
   }
   #loginScreen.show { display: flex; }
   #loginScreen::before {
-    content: '';
-    position: absolute;
-    width: 600px; height: 600px;
-    border-radius: 50%;
+    content: ''; position: absolute; width: 600px; height: 600px; border-radius: 50%;
     background: radial-gradient(circle, rgba(30,95,168,0.3) 0%, transparent 70%);
     top: -200px; right: -100px;
   }
   #loginScreen::after {
-    content: '';
-    position: absolute;
-    width: 400px; height: 400px;
-    border-radius: 50%;
+    content: ''; position: absolute; width: 400px; height: 400px; border-radius: 50%;
     background: radial-gradient(circle, rgba(14,148,136,0.2) 0%, transparent 70%);
     bottom: -100px; left: -50px;
   }
   .login-card {
-    background: white;
-    border-radius: 16px;
-    padding: 40px 32px;
-    width: 100%;
-    max-width: 420px;
-    box-shadow: var(--shadow-lg);
-    position: relative;
-    z-index: 1;
+    background: white; border-radius: 16px; padding: 40px 32px;
+    width: 100%; max-width: 420px; box-shadow: var(--shadow-lg);
+    position: relative; z-index: 1;
   }
   .login-logo { text-align: center; margin-bottom: 28px; }
   .login-logo .wave-icon { font-size: 40px; display: block; margin-bottom: 12px; }
   .login-logo h1 { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--navy); letter-spacing: 0.5px; }
   .login-logo p { font-size: 12px; color: var(--text-muted); margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; }
   .login-divider { height: 1px; background: var(--border); margin: 20px 0; }
-  .login-tabs { display: flex; gap: 8px; margin-bottom: 20px; background: var(--sand); padding: 4px; border-radius: var(--radius-sm); }
-  .login-tab { flex: 1; padding: 10px; border: none; background: transparent; border-radius: 4px; font-size: 13px; font-weight: 500; color: var(--text-muted); cursor: pointer; transition: all 0.2s; }
-  .login-tab.active { background: white; color: var(--navy); box-shadow: var(--shadow-sm); }
+
   .form-group { margin-bottom: 16px; }
   .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; letter-spacing: 0.5px; text-transform: uppercase; }
   .form-input {
     width: 100%; padding: 12px 14px;
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-sm);
-    font-size: 16px;
-    font-family: 'Inter', sans-serif;
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    font-size: 16px; font-family: 'Inter', sans-serif;
     color: var(--text-primary); background: white;
     transition: border-color 0.2s, box-shadow 0.2s; outline: none;
   }
@@ -133,8 +116,8 @@
     width: 100%; padding: 14px;
     background: linear-gradient(135deg, var(--ocean) 0%, var(--navy-light) 100%);
     color: white; border: none; border-radius: var(--radius-sm);
-    font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; letter-spacing: 0.3px;
-    min-height: 48px;
+    font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    min-height: 50px; font-family: 'Inter', sans-serif;
   }
   .btn-primary:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
   .btn-primary:disabled { opacity: 0.6; transform: none; cursor: not-allowed; }
@@ -146,36 +129,28 @@
   /* HEADER */
   .header {
     background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
-    padding: 0 16px;
-    display: flex; align-items: center; justify-content: space-between;
-    height: var(--header-h);
-    position: sticky; top: 0; z-index: 100;
+    padding: 0 16px; display: flex; align-items: center; justify-content: space-between;
+    height: var(--header-h); position: sticky; top: 0; z-index: 100;
     box-shadow: 0 2px 12px rgba(0,0,0,0.2);
   }
   .header-left { display: flex; align-items: center; gap: 12px; }
   .hamburger {
-    display: none;
-    background: none; border: none; cursor: pointer;
-    padding: 8px; border-radius: 6px; color: white;
-    font-size: 22px; line-height: 1;
-    transition: background 0.2s;
-    min-width: 40px; min-height: 40px;
+    display: none; background: none; border: none; cursor: pointer;
+    padding: 8px; border-radius: 6px; color: white; font-size: 22px; line-height: 1;
+    transition: background 0.2s; min-width: 40px; min-height: 40px;
     align-items: center; justify-content: center;
   }
   .hamburger:hover { background: rgba(255,255,255,0.1); }
   .header-brand { display: flex; align-items: center; gap: 10px; }
   .header-brand .wave { font-size: 20px; }
-  .header-brand-text h1 { font-family: 'Playfair Display', serif; font-size: 15px; color: white; letter-spacing: 0.3px; }
+  .header-brand-text h1 { font-family: 'Playfair Display', serif; font-size: 15px; color: white; }
   .header-brand-text p { font-size: 10px; color: rgba(255,255,255,0.5); letter-spacing: 1.5px; text-transform: uppercase; }
   .header-right { display: flex; align-items: center; gap: 10px; }
   .user-badge {
     display: flex; align-items: center; gap: 8px;
-    background: rgba(255,255,255,0.1); padding: 5px 10px;
-    border-radius: 20px; cursor: pointer; transition: background 0.2s;
+    background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 20px;
   }
-  .user-badge:hover { background: rgba(255,255,255,0.15); }
   .user-avatar { width: 28px; height: 28px; background: var(--teal); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: white; flex-shrink: 0; }
-  .user-info { line-height: 1.3; }
   .user-info .name { font-size: 12px; font-weight: 600; color: white; }
   .user-info .role { font-size: 10px; color: rgba(255,255,255,0.5); }
   .btn-logout { background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
@@ -185,24 +160,14 @@
   .layout { display: flex; min-height: calc(100vh - var(--header-h)); }
 
   /* SIDEBAR OVERLAY */
-  .sidebar-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.4); z-index: 150;
-  }
+  .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 150; }
   .sidebar-overlay.open { display: block; }
 
   /* SIDEBAR */
   .sidebar {
-    width: var(--sidebar-w);
-    background: white;
-    border-right: 1px solid var(--border);
-    padding: 16px 0;
-    flex-shrink: 0;
-    position: sticky;
-    top: var(--header-h);
-    height: calc(100vh - var(--header-h));
-    overflow-y: auto;
-    transition: transform 0.3s ease;
+    width: var(--sidebar-w); background: white; border-right: 1px solid var(--border);
+    padding: 16px 0; flex-shrink: 0; position: sticky; top: var(--header-h);
+    height: calc(100vh - var(--header-h)); overflow-y: auto; transition: transform 0.3s ease;
   }
   .sidebar-section { padding: 0 12px; margin-bottom: 20px; }
   .sidebar-section-title { font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; padding: 0 8px; margin-bottom: 6px; }
@@ -239,8 +204,8 @@
   .form-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
   .form-group-inline { display: flex; flex-direction: column; gap: 6px; }
   select.form-input { cursor: pointer; }
-  textarea.form-input { resize: vertical; min-height: 80px; }
 
+  /* AUTOCOMPLETE */
   .autocomplete-wrapper { position: relative; }
   .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1.5px solid var(--ocean); border-top: none; border-radius: 0 0 var(--radius-sm) var(--radius-sm); max-height: 220px; overflow-y: auto; z-index: 50; box-shadow: var(--shadow-md); }
   .autocomplete-item { padding: 12px 14px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px; transition: background 0.1s; min-height: 44px; }
@@ -299,6 +264,7 @@
   .alert-success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
   .alert-error { background: var(--danger-light); color: #991b1b; border: 1px solid #fecaca; }
   .alert-warning { background: var(--low-stock); color: #92400e; border: 1px solid var(--low-stock-border); }
+  .alert-info { background: rgba(30,95,168,0.06); color: var(--navy); border: 1px solid rgba(30,95,168,0.2); }
 
   /* LOW STOCK */
   .low-stock-alerts { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-bottom: 16px; }
@@ -312,9 +278,7 @@
   .property-card { background: white; border-radius: var(--radius); padding: 16px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
   .property-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
   .property-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  .dot-garbo { background: var(--ocean); }
-  .dot-odon { background: var(--teal); }
-  .dot-sheldon { background: #7c3aed; }
+  .dot-garbo { background: var(--ocean); } .dot-odon { background: var(--teal); } .dot-sheldon { background: #7c3aed; }
   .property-card-name { font-size: 13px; font-weight: 700; color: var(--navy); }
   .property-card-sub { font-size: 11px; color: var(--text-muted); }
   .property-stat { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
@@ -333,13 +297,6 @@
   .page { display: none; }
   .page.active { display: block; }
 
-  /* MODAL */
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,31,61,0.5); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(2px); padding: 16px; }
-  .modal-overlay.open { display: flex; }
-  .modal { background: white; border-radius: 12px; padding: 24px; width: 100%; max-width: 460px; box-shadow: var(--shadow-lg); }
-  .modal-title { font-family: 'Playfair Display', serif; font-size: 18px; color: var(--navy); margin-bottom: 18px; }
-  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
-
   /* EMPTY STATE */
   .empty-state { text-align: center; padding: 40px 16px; color: var(--text-muted); }
   .empty-state .icon { font-size: 36px; margin-bottom: 10px; }
@@ -351,64 +308,38 @@
   /* PRINT */
   @media print {
     .header, .sidebar, .filter-bar .btn-group, .no-print, .sidebar-overlay, .hamburger { display: none !important; }
-    .main { padding: 0; }
-    .layout { display: block; }
-    body { background: white; }
+    .main { padding: 0; } .layout { display: block; } body { background: white; }
   }
 
   /* SCROLLBAR */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: var(--sand); }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-  /* ===== MOBILE RESPONSIVE ===== */
+  /* ===== MOBILE ===== */
   @media (max-width: 768px) {
     :root { --header-h: 54px; }
-
     .hamburger { display: flex; }
-
-    .sidebar {
-      position: fixed;
-      left: 0; top: var(--header-h);
-      height: calc(100vh - var(--header-h));
-      z-index: 160;
-      transform: translateX(-100%);
-      box-shadow: var(--shadow-lg);
-    }
+    .sidebar { position: fixed; left: 0; top: var(--header-h); height: calc(100vh - var(--header-h)); z-index: 160; transform: translateX(-100%); box-shadow: var(--shadow-lg); }
     .sidebar.open { transform: translateX(0); }
-
     .main { padding: 14px 12px; }
-    .header-brand-text p { display: none; }
-    .user-info { display: none; }
-
-    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .stat-value { font-size: 22px; }
+    .header-brand-text p, .user-info { display: none; }
+    .stats-grid { gap: 10px; } .stat-value { font-size: 20px; }
     .property-cards { grid-template-columns: 1fr; }
     .form-grid { grid-template-columns: 1fr; }
     .filter-bar { flex-direction: column; align-items: stretch; }
     .filter-bar > * { min-width: unset !important; }
-    .btn-group { gap: 6px; }
     .btn { padding: 10px 14px; font-size: 12px; }
     .low-stock-alerts { grid-template-columns: 1fr 1fr; }
     .page-title { font-size: 19px; }
     #toast { bottom: 12px; right: 12px; left: 12px; }
     .toast-msg { max-width: 100%; }
-    .modal { max-height: 90vh; overflow-y: auto; }
   }
 
   @media (max-width: 480px) {
-    .property-cards { grid-template-columns: 1fr; }
-    .low-stock-alerts { grid-template-columns: 1fr; }
-    .stats-grid { grid-template-columns: 1fr 1fr; }
-
+    .property-cards, .low-stock-alerts { grid-template-columns: 1fr; }
     /* Card-style responsive tables */
-    .resp-table table,
-    .resp-table thead,
-    .resp-table tbody,
-    .resp-table th,
-    .resp-table td,
-    .resp-table tr { display: block; }
+    .resp-table table, .resp-table thead, .resp-table tbody, .resp-table th, .resp-table td, .resp-table tr { display: block; }
     .resp-table thead { display: none; }
     .resp-table .table-wrapper { border: none; overflow: visible; background: transparent; }
     .resp-table tbody tr { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; padding: 12px; background: white; box-shadow: var(--shadow-sm); }
@@ -435,20 +366,23 @@
       <p>Purchase Department Portal</p>
     </div>
     <div class="login-divider"></div>
-    <div class="login-tabs">
-      <button class="login-tab active" onclick="setLoginRole('admin')">Admin</button>
-      <button class="login-tab" onclick="setLoginRole('staff')">Staff</button>
-    </div>
     <div id="loginAlert"></div>
     <div class="form-group">
-      <label class="form-label">Username</label>
-      <input type="text" class="form-input" id="loginUser" placeholder="Enter username" autocomplete="username" />
+      <label class="form-label">Email Address</label>
+      <input type="email" class="form-input" id="loginEmail" placeholder="you@searockinn.com"
+        autocomplete="email" inputmode="email"
+        onkeydown="if(event.key==='Enter') document.getElementById('loginPass').focus()" />
     </div>
     <div class="form-group">
       <label class="form-label">Password</label>
-      <input type="password" class="form-input" id="loginPass" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()" />
+      <input type="password" class="form-input" id="loginPass" placeholder="Enter password"
+        autocomplete="current-password"
+        onkeydown="if(event.key==='Enter') doLogin()" />
     </div>
     <button class="btn-primary" id="loginBtn" onclick="doLogin()">Sign In →</button>
+    <div style="margin-top:14px;text-align:center;font-size:11px;color:var(--text-muted)">
+      Forgot password? Contact your administrator.
+    </div>
   </div>
 </div>
 
@@ -469,8 +403,8 @@
       <div class="user-badge">
         <div class="user-avatar" id="userAvatar">A</div>
         <div class="user-info">
-          <div class="name" id="headerUserName">Admin</div>
-          <div class="role" id="headerUserRole">Administrator</div>
+          <div class="name" id="headerUserName">User</div>
+          <div class="role" id="headerUserRole">Staff</div>
         </div>
       </div>
       <button class="btn-logout" onclick="doLogout()">Sign Out</button>
@@ -508,7 +442,7 @@
           <span class="nav-icon">🔍</span> Audit Trail
         </div>
       </div>
-      <div class="sidebar-section" id="adminOnlyNav">
+      <div class="sidebar-section" id="adminOnlyNav" style="display:none">
         <div class="sidebar-section-title">Admin</div>
         <div class="nav-item" onclick="showPage('userManagement')" id="nav-userManagement">
           <span class="nav-icon">👤</span> User Management
@@ -521,6 +455,7 @@
     </aside>
 
     <main class="main">
+
       <!-- DASHBOARD -->
       <div class="page active" id="page-dashboard">
         <h2 class="page-title">Dashboard</h2>
@@ -554,7 +489,7 @@
             <div class="form-group-inline">
               <label class="form-label">Product Name</label>
               <div class="autocomplete-wrapper">
-                <input type="text" class="form-input" id="ap_product" placeholder="Type to search or create..." autocomplete="off"
+                <input type="text" class="form-input" id="ap_product" placeholder="Type to search or create…" autocomplete="off"
                   oninput="handleProductSearch(this.value,'ap_product_list',true)"
                   onfocus="handleProductSearch(this.value,'ap_product_list',true)"
                   onblur="setTimeout(()=>document.getElementById('ap_product_list').style.display='none',200)" />
@@ -576,7 +511,7 @@
           <div class="filter-bar">
             <div class="search-input-wrapper">
               <span class="search-icon">🔍</span>
-              <input type="text" class="form-input" placeholder="Search product..." oninput="renderAddHistory(this.value)" />
+              <input type="text" class="form-input" placeholder="Search product…" oninput="renderAddHistory(this.value)" />
             </div>
           </div>
           <div class="table-wrapper">
@@ -603,7 +538,7 @@
             <div class="form-group-inline">
               <label class="form-label">Product Name</label>
               <div class="autocomplete-wrapper">
-                <input type="text" class="form-input" id="ip_product" placeholder="Select existing product..." autocomplete="off"
+                <input type="text" class="form-input" id="ip_product" placeholder="Select existing product…" autocomplete="off"
                   oninput="handleProductSearch(this.value,'ip_product_list',false);updateIssueBalance()"
                   onfocus="handleProductSearch(this.value,'ip_product_list',false)"
                   onblur="setTimeout(()=>{document.getElementById('ip_product_list').style.display='none';updateIssueBalance()},200)" />
@@ -652,7 +587,7 @@
           <div class="filter-bar">
             <div class="search-input-wrapper">
               <span class="search-icon">🔍</span>
-              <input type="text" class="form-input" placeholder="Search..." oninput="renderIssueHistory(this.value)" />
+              <input type="text" class="form-input" placeholder="Search…" oninput="renderIssueHistory(this.value)" />
             </div>
           </div>
           <div class="table-wrapper">
@@ -672,7 +607,7 @@
           <div class="filter-bar">
             <div class="search-input-wrapper">
               <span class="search-icon">🔍</span>
-              <input type="text" class="form-input" id="sb_search" placeholder="Search product..." oninput="renderStockBalance(this.value)" />
+              <input type="text" class="form-input" id="sb_search" placeholder="Search product…" oninput="renderStockBalance(this.value)" />
             </div>
             <div class="btn-group no-print">
               <button class="btn btn-outline btn-sm" onclick="exportStockExcel()">📊 Excel</button>
@@ -707,9 +642,9 @@
               <label class="form-label">Property</label>
               <select class="form-input" id="ir_property" onchange="renderIssueReport()">
                 <option value="">All Properties</option>
-                <option value="Garbo">Garbo (Hotel Sea Rock Villa)</option>
-                <option value="Odon">Odon (Hotel Tania Sea Rock)</option>
-                <option value="Sheldon">Hotel Sheldon (Sea Rock Villa)</option>
+                <option value="Garbo">Garbo</option>
+                <option value="Odon">Odon</option>
+                <option value="Sheldon">Sheldon</option>
               </select>
             </div>
             <div class="form-group-inline" style="min-width:150px">
@@ -756,7 +691,7 @@
           <div class="filter-bar">
             <div class="search-input-wrapper">
               <span class="search-icon">🔍</span>
-              <input type="text" class="form-input" placeholder="Search..." oninput="renderAudit(this.value)" />
+              <input type="text" class="form-input" placeholder="Search…" oninput="renderAudit(this.value)" />
             </div>
           </div>
           <div class="table-wrapper">
@@ -768,25 +703,29 @@
         </div>
       </div>
 
-      <!-- USER MANAGEMENT -->
+      <!-- USER MANAGEMENT (Admin only) -->
       <div class="page" id="page-userManagement">
         <h2 class="page-title">User Management</h2>
-        <p class="page-subtitle">Manage admin and staff accounts (Admin only)</p>
+        <p class="page-subtitle">Add or remove staff and admin accounts</p>
         <div class="card">
+          <div class="alert alert-info" style="margin-bottom:16px">
+            ℹ️ Users log in with <strong>Email &amp; Password</strong> via Firebase Authentication.
+            A password reset email can be sent from Firebase Console if needed.
+          </div>
           <div class="card-title"><span>➕</span> Add New User</div>
           <div id="userAlert"></div>
           <div class="form-grid">
             <div class="form-group-inline">
-              <label class="form-label">Username</label>
-              <input type="text" class="form-input" id="nu_user" placeholder="Username" autocomplete="off" />
+              <label class="form-label">Full Name</label>
+              <input type="text" class="form-input" id="nu_name" placeholder="e.g. Rahul Sharma" />
+            </div>
+            <div class="form-group-inline">
+              <label class="form-label">Email Address</label>
+              <input type="email" class="form-input" id="nu_email" placeholder="user@searockinn.com" inputmode="email" />
             </div>
             <div class="form-group-inline">
               <label class="form-label">Password</label>
-              <input type="password" class="form-input" id="nu_pass" placeholder="Password" />
-            </div>
-            <div class="form-group-inline">
-              <label class="form-label">Full Name</label>
-              <input type="text" class="form-input" id="nu_name" placeholder="Full name" />
+              <input type="password" class="form-input" id="nu_pass" placeholder="Min 6 characters" />
             </div>
             <div class="form-group-inline">
               <label class="form-label">Role</label>
@@ -797,14 +736,14 @@
             </div>
           </div>
           <div style="margin-top:16px">
-            <button class="btn btn-ocean" id="addUserBtn" onclick="addUser()">Add User</button>
+            <button class="btn btn-ocean" id="addUserBtn" onclick="addUser()">➕ Create User</button>
           </div>
         </div>
         <div class="card">
           <div class="card-title"><span>👥</span> All Users</div>
           <div class="table-wrapper">
             <table>
-              <thead><tr><th>Username</th><th>Full Name</th><th>Role</th><th>Action</th></tr></thead>
+              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Action</th></tr></thead>
               <tbody id="userTable"></tbody>
             </table>
           </div>
@@ -817,6 +756,7 @@
         <p class="page-subtitle">Low stock and out of stock notifications</p>
         <div id="alertsContent"></div>
       </div>
+
     </main>
   </div>
 </div>
@@ -825,113 +765,153 @@
 <div id="toast"></div>
 
 <script>
-// ===== FIREBASE INIT =====
-const firebaseConfig = {
-  apiKey: "AIzaSyDKGw9hdvkNsm4rX1iAWMZb7LjVCYvwVi8",
-  authDomain: "sea-rock-inn-purchase-dept.firebaseapp.com",
-  projectId: "sea-rock-inn-purchase-dept",
-  storageBucket: "sea-rock-inn-purchase-dept.firebasestorage.app",
-  messagingSenderId: "899352703601",
-  appId: "1:899352703601:web:1120ed82903347bccf61d0"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+// =====================================================================
+//  IMPORTANT: db, auth, secondaryAuth are declared in firebase-config.js
+//  This file contains NO API keys. All Firebase references come from
+//  firebase-config.js which is loaded before this script.
+// =====================================================================
 
-// ===== IN-MEMORY CACHE =====
+// ── In-memory cache (populated from Firestore after login) ───────────
 let cache = {
-  users: [],
-  stock: {},
-  addHistory: [],
-  issues: [],
-  audit: []
+  stock: {},       // { productName: qty }
+  addHistory: [],  // [{ id, date, product, qty, user, timestamp }]
+  issues: [],      // [{ id, date, product, property, qty, closingBalance, remark, user, timestamp }]
+  audit: [],       // [{ id, datetime, action, product, qty, property, remark, user, timestamp }]
+  users: []        // [{ id, email, name, role }]  — from userProfiles collection
 };
 
-// ===== AUTH =====
-let currentUser = null;
-let loginRole = 'admin';
+let currentUser = null;  // { uid, email, name, role }
 
-function setLoginRole(role) {
-  loginRole = role;
-  document.querySelectorAll('.login-tab').forEach((t,i) => {
-    t.classList.toggle('active', (i===0&&role==='admin')||(i===1&&role==='staff'));
-  });
-}
+// ── Auth State Observer ──────────────────────────────────────────────
+// Fired automatically when user signs in / out / page refreshes.
+auth.onAuthStateChanged(async (firebaseUser) => {
+  if (firebaseUser) {
+    // User already signed in (e.g. page refresh with active session)
+    showLoading(true);
+    try {
+      const profile = await getProfile(firebaseUser.uid);
+      if (!profile) {
+        // Auth exists but no Firestore profile → deny access
+        await auth.signOut();
+        showError('Your account profile was not found. Contact admin.');
+        showLoading(false);
+        showLogin();
+        return;
+      }
+      currentUser = { uid: firebaseUser.uid, email: firebaseUser.email, ...profile };
+      await loadAllData();
+      showApp();
+    } catch (e) {
+      console.error('Auth state error:', e);
+      showLoading(false);
+      showLogin();
+    }
+  } else {
+    // No user signed in
+    showLoading(false);
+    showLogin();
+  }
+});
 
+// ── Login ─────────────────────────────────────────────────────────────
 async function doLogin() {
-  const u = document.getElementById('loginUser').value.trim();
-  const p = document.getElementById('loginPass').value.trim();
-  const btn = document.getElementById('loginBtn');
-  if (!u || !p) {
-    document.getElementById('loginAlert').innerHTML = '<div class="alert alert-error">❌ Please enter username and password.</div>';
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  const btn   = document.getElementById('loginBtn');
+  const alertEl = document.getElementById('loginAlert');
+
+  alertEl.innerHTML = '';
+  if (!email || !pass) {
+    alertEl.innerHTML = '<div class="alert alert-error">❌ Please enter your email and password.</div>';
     return;
   }
+
   btn.disabled = true;
   btn.innerHTML = '<span class="inline-spinner"></span> Signing in…';
-  document.getElementById('loginAlert').innerHTML = '';
+
   try {
-    const snap = await db.collection('users').where('username','==',u).where('role','==',loginRole).get();
-    const userDoc = snap.docs.find(d => d.data().password === p);
-    if (!userDoc) {
-      document.getElementById('loginAlert').innerHTML = '<div class="alert alert-error">❌ Invalid credentials. Please try again.</div>';
-      btn.disabled = false; btn.innerHTML = 'Sign In →'; return;
+    // Firebase Auth handles the actual authentication — no Firestore query needed for login
+    await auth.signInWithEmailAndPassword(email, pass);
+    // onAuthStateChanged will fire automatically and complete the setup
+  } catch (err) {
+    console.error('Login error:', err);
+    let msg = '❌ Sign in failed. Please try again.';
+    if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+      msg = '❌ Invalid email or password.';
+    } else if (err.code === 'auth/too-many-requests') {
+      msg = '❌ Too many failed attempts. Try again later.';
+    } else if (err.code === 'auth/network-request-failed') {
+      msg = '❌ No internet connection. Please check your network.';
+    } else if (err.code === 'auth/invalid-email') {
+      msg = '❌ Please enter a valid email address.';
     }
-    currentUser = { id: userDoc.id, ...userDoc.data() };
-    showLoading(true);
-    await loadAllData();
-    showLoading(false);
-    document.getElementById('loginScreen').classList.remove('show');
-    document.getElementById('app').classList.add('show');
-    document.getElementById('headerUserName').textContent = currentUser.name;
-    document.getElementById('headerUserRole').textContent = currentUser.role === 'admin' ? 'Administrator' : 'Staff';
-    document.getElementById('userAvatar').textContent = currentUser.name[0].toUpperCase();
-    document.getElementById('adminOnlyNav').style.display = currentUser.role !== 'admin' ? 'none' : 'block';
-    setDefaultDates();
-    renderAll();
-    showPage('dashboard');
-  } catch(err) {
-    console.error(err);
-    document.getElementById('loginAlert').innerHTML = '<div class="alert alert-error">❌ Connection error. Check your internet.</div>';
-    showLoading(false);
+    alertEl.innerHTML = `<div class="alert alert-error">${msg}</div>`;
+    btn.disabled = false;
+    btn.innerHTML = 'Sign In →';
   }
-  btn.disabled = false; btn.innerHTML = 'Sign In →';
 }
 
-function doLogout() {
-  currentUser = null;
-  cache = { users:[], stock:{}, addHistory:[], issues:[], audit:[] };
-  document.getElementById('app').classList.remove('show');
-  document.getElementById('loginScreen').classList.add('show');
-  document.getElementById('loginUser').value = '';
-  document.getElementById('loginPass').value = '';
-  document.getElementById('loginAlert').innerHTML = '';
-  closeSidebar();
+async function doLogout() {
+  try {
+    await auth.signOut();
+    // onAuthStateChanged fires → showLogin() called automatically
+    cache = { stock: {}, addHistory: [], issues: [], audit: [], users: [] };
+    currentUser = null;
+    closeSidebar();
+  } catch (e) { console.error(e); }
 }
 
+// ── Firestore: Load all data ─────────────────────────────────────────
+async function loadAllData() {
+  try {
+    const [stockDoc, addSnap, issueSnap, auditSnap, usersSnap] = await Promise.all([
+      db.collection('config').doc('stock').get(),
+      db.collection('addHistory').orderBy('timestamp', 'desc').get(),
+      db.collection('issues').orderBy('timestamp', 'desc').get(),
+      db.collection('audit').orderBy('timestamp', 'desc').get(),
+      db.collection('userProfiles').get()
+    ]);
+    cache.stock      = stockDoc.exists ? stockDoc.data() : {};
+    cache.addHistory = addSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    cache.issues     = issueSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    cache.audit      = auditSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    cache.users      = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    console.error('Firestore load error:', err);
+    toast('Some data failed to load. Check internet.', 'error');
+  }
+}
+
+async function getProfile(uid) {
+  const doc = await db.collection('userProfiles').doc(uid).get();
+  return doc.exists ? doc.data() : null;
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────
 function showLoading(show) {
   document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
 }
-
-async function loadAllData() {
-  try {
-    const [usersSnap, stockDoc, addSnap, issueSnap, auditSnap] = await Promise.all([
-      db.collection('users').get(),
-      db.collection('config').doc('stock').get(),
-      db.collection('addHistory').orderBy('timestamp','desc').get(),
-      db.collection('issues').orderBy('timestamp','desc').get(),
-      db.collection('audit').orderBy('timestamp','desc').get()
-    ]);
-    cache.users = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    cache.stock = stockDoc.exists ? stockDoc.data() : {};
-    cache.addHistory = addSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    cache.issues = issueSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    cache.audit = auditSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-  } catch(err) {
-    console.error('Load error:', err);
-    toast('Failed to load data. Check connection.', 'error');
-  }
+function showLogin() {
+  document.getElementById('loginScreen').classList.add('show');
+  document.getElementById('app').classList.remove('show');
+}
+function showError(msg) {
+  document.getElementById('loginAlert').innerHTML = `<div class="alert alert-error">❌ ${msg}</div>`;
+}
+function showApp() {
+  showLoading(false);
+  document.getElementById('loginScreen').classList.remove('show');
+  document.getElementById('app').classList.add('show');
+  document.getElementById('headerUserName').textContent = currentUser.name || currentUser.email;
+  document.getElementById('headerUserRole').textContent = currentUser.role === 'admin' ? 'Administrator' : 'Staff';
+  document.getElementById('userAvatar').textContent = (currentUser.name || currentUser.email)[0].toUpperCase();
+  document.getElementById('adminOnlyNav').style.display = currentUser.role === 'admin' ? 'block' : 'none';
+  setDefaultDates();
+  renderAll();
+  showPage('dashboard');
 }
 
-// ===== MOBILE SIDEBAR =====
+// ── Mobile Sidebar ────────────────────────────────────────────────────
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebarOverlay').classList.toggle('open');
@@ -941,9 +921,9 @@ function closeSidebar() {
   document.getElementById('sidebarOverlay').classList.remove('open');
 }
 
-// ===== NAVIGATION =====
+// ── Navigation ────────────────────────────────────────────────────────
 let currentPage = 'dashboard';
-let reportTab = 'all';
+let reportTab   = 'all';
 
 function showPage(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -952,23 +932,23 @@ function showPage(page) {
   document.getElementById('nav-'+page)?.classList.add('active');
   currentPage = page;
   closeSidebar();
-  if (page==='dashboard') renderDashboard();
-  if (page==='stockBalance') renderStockBalance('');
-  if (page==='issueReport') renderIssueReport();
-  if (page==='auditTrail') renderAudit('');
-  if (page==='addProduct') renderAddHistory('');
-  if (page==='issueProduct') renderIssueHistory('');
+  if (page==='dashboard')      renderDashboard();
+  if (page==='stockBalance')   renderStockBalance('');
+  if (page==='issueReport')    renderIssueReport();
+  if (page==='auditTrail')     renderAudit('');
+  if (page==='addProduct')     renderAddHistory('');
+  if (page==='issueProduct')   renderIssueHistory('');
   if (page==='userManagement') renderUsers();
-  if (page==='alerts') renderAlerts();
+  if (page==='alerts')         renderAlerts();
 }
 
-// ===== DATES =====
+// ── Dates ─────────────────────────────────────────────────────────────
 function setDefaultDates() {
   const today = new Date().toISOString().split('T')[0];
   ['ap_date','ip_date'].forEach(id => { const el=document.getElementById(id); if(el) el.value=today; });
 }
 
-// ===== PRODUCTS / AUTOCOMPLETE =====
+// ── Autocomplete ──────────────────────────────────────────────────────
 function getAllProducts() { return Object.keys(cache.stock); }
 
 function handleProductSearch(val, listId, allowNew) {
@@ -981,12 +961,12 @@ function handleProductSearch(val, listId, allowNew) {
   matches.forEach(p => {
     const qty = cache.stock[p] || 0;
     html += `<div class="autocomplete-item" onmousedown="selectProduct('${p.replace(/'/g,"\\'")}','${listId.replace('_list','')}')">`
-      + `📦 <span>${p}</span><span style="margin-left:auto;font-size:11px;color:var(--text-muted)">Qty: ${qty}</span></div>`;
+          + `📦 <span>${p}</span><span style="margin-left:auto;font-size:11px;color:var(--text-muted)">Qty: ${qty}</span></div>`;
   });
   if (allowNew && val.trim() && !products.map(p=>p.toLowerCase()).includes(val.trim().toLowerCase())) {
     if (matches.length>0) html += '<div class="autocomplete-divider"></div>';
     html += `<div class="autocomplete-item new-product" onmousedown="selectProduct('${val.trim().replace(/'/g,"\\'")}','${listId.replace('_list','')}')">`
-      + `✨ Create new: "${val.trim()}"</div>`;
+          + `✨ Create new: "${val.trim()}"</div>`;
   }
   list.innerHTML = html;
   list.style.display = html ? 'block' : 'none';
@@ -1002,7 +982,7 @@ function selectProduct(name, inputId) {
   }
 }
 
-// ===== STOCK HELPERS =====
+// ── Stock helpers ─────────────────────────────────────────────────────
 function getBalance(product) { return cache.stock[product] || 0; }
 
 function updateIssueBalance() {
@@ -1013,7 +993,7 @@ function updateIssueBalance() {
     display.innerHTML = '<span class="balance-badge">— Select product</span>'; return;
   }
   const bal = getBalance(product);
-  let cls = bal<=0?'empty':bal<=10?'low':'';
+  const cls = bal<=0?'empty':bal<=10?'low':'';
   display.innerHTML = `<span class="balance-badge ${cls}">${bal<=0?'⛔':bal<=10?'⚠️':'✅'} ${bal} units available</span>`;
 }
 
@@ -1022,36 +1002,36 @@ function validateIssueQty() {
   const qty = parseInt(document.getElementById('ip_qty')?.value)||0;
   const bal = getBalance(product);
   const alertEl = document.getElementById('issueProductAlert');
-  if (qty>bal && bal>0) alertEl.innerHTML = `<div class="alert alert-warning">⚠️ Requested (${qty}) exceeds available stock (${bal}).</div>`;
+  if (qty>bal && bal>0) alertEl.innerHTML = `<div class="alert alert-warning">⚠️ Requested (${qty}) exceeds stock (${bal}).</div>`;
   else alertEl.innerHTML = '';
 }
 
-// ===== ADD PRODUCT =====
+// ── Add Product ───────────────────────────────────────────────────────
 async function addProduct() {
-  const date = document.getElementById('ap_date').value;
-  const product = document.getElementById('ap_product').value.trim();
-  const qty = parseInt(document.getElementById('ap_qty').value)||0;
-  const alertEl = document.getElementById('addProductAlert');
-  const btn = document.getElementById('addProductBtn');
-  if (!date || !product || qty<=0) { alertEl.innerHTML='<div class="alert alert-error">❌ Please fill all fields with valid values.</div>'; return; }
+  const date     = document.getElementById('ap_date').value;
+  const product  = document.getElementById('ap_product').value.trim();
+  const qty      = parseInt(document.getElementById('ap_qty').value)||0;
+  const alertEl  = document.getElementById('addProductAlert');
+  const btn      = document.getElementById('addProductBtn');
+  if (!date||!product||qty<=0) { alertEl.innerHTML='<div class="alert alert-error">❌ Please fill all fields with valid values.</div>'; return; }
   btn.disabled=true; btn.innerHTML='<span class="inline-spinner"></span> Saving…';
   try {
     const newQty = (cache.stock[product]||0) + qty;
     cache.stock[product] = newQty;
     await db.collection('config').doc('stock').set(cache.stock);
     const ts = new Date().toISOString();
-    const histEntry = { date, product, qty, user: currentUser.name, timestamp: ts };
+    const histEntry = { date, product, qty, user: currentUser.name||currentUser.email, timestamp: ts };
     const hRef = await db.collection('addHistory').add(histEntry);
     cache.addHistory.unshift({ id: hRef.id, ...histEntry });
-    const auditEntry = { datetime: ts, action:'Product Added', product, qty, property:'-', remark:'-', user: currentUser.name, timestamp: ts };
+    const auditEntry = { datetime: ts, action:'Product Added', product, qty, property:'-', remark:'-', user: histEntry.user, timestamp: ts };
     const aRef = await db.collection('audit').add(auditEntry);
     cache.audit.unshift({ id: aRef.id, ...auditEntry });
     alertEl.innerHTML = `<div class="alert alert-success">✅ ${product} (${qty} units) added. New balance: ${newQty}</div>`;
     toast(`${product} added — Balance: ${newQty}`, 'success');
     clearAddForm(); renderAddHistory(''); updateAlertBadge();
-  } catch(err) {
+  } catch (err) {
     console.error(err);
-    alertEl.innerHTML='<div class="alert alert-error">❌ Failed to save. Check connection.</div>';
+    alertEl.innerHTML = '<div class="alert alert-error">❌ Save failed. Check internet and try again.</div>';
   }
   btn.disabled=false; btn.innerHTML='➕ Add to Inventory';
 }
@@ -1064,7 +1044,7 @@ function clearAddForm() {
 
 function renderAddHistory(search='') {
   const tbody = document.getElementById('addHistoryTable');
-  const filtered = cache.addHistory.filter(r => !search || r.product.toLowerCase().includes(search.toLowerCase()));
+  const filtered = cache.addHistory.filter(r=>!search||r.product.toLowerCase().includes(search.toLowerCase()));
   tbody.innerHTML = filtered.length ? filtered.map(r=>`
     <tr>
       <td data-label="Date">${formatDate(r.date)}</td>
@@ -1074,17 +1054,17 @@ function renderAddHistory(search='') {
     </tr>`).join('') : `<tr><td colspan="4"><div class="empty-state"><div class="icon">📦</div><p>No stock additions yet</p></div></td></tr>`;
 }
 
-// ===== ISSUE PRODUCT =====
+// ── Issue Product ─────────────────────────────────────────────────────
 async function issueProduct() {
-  const date = document.getElementById('ip_date').value;
-  const product = document.getElementById('ip_product').value.trim();
+  const date     = document.getElementById('ip_date').value;
+  const product  = document.getElementById('ip_product').value.trim();
   const property = document.getElementById('ip_property').value;
-  const qty = parseInt(document.getElementById('ip_qty').value)||0;
-  const remark = document.getElementById('ip_remark').value;
-  const alertEl = document.getElementById('issueProductAlert');
-  const btn = document.getElementById('issueProductBtn');
+  const qty      = parseInt(document.getElementById('ip_qty').value)||0;
+  const remark   = document.getElementById('ip_remark').value;
+  const alertEl  = document.getElementById('issueProductAlert');
+  const btn      = document.getElementById('issueProductBtn');
   if (!date||!product||!property||qty<=0) { alertEl.innerHTML='<div class="alert alert-error">❌ Please fill all required fields.</div>'; return; }
-  if (!getAllProducts().includes(product)) { alertEl.innerHTML='<div class="alert alert-error">❌ Product not found in inventory. Add it first.</div>'; return; }
+  if (!getAllProducts().includes(product)) { alertEl.innerHTML='<div class="alert alert-error">❌ Product not found. Add it to inventory first.</div>'; return; }
   const balance = getBalance(product);
   if (qty>balance) { alertEl.innerHTML=`<div class="alert alert-error">❌ Insufficient stock. Available: ${balance}, Requested: ${qty}</div>`; return; }
   btn.disabled=true; btn.innerHTML='<span class="inline-spinner"></span> Saving…';
@@ -1093,29 +1073,30 @@ async function issueProduct() {
     cache.stock[product] = newBalance;
     await db.collection('config').doc('stock').set(cache.stock);
     const ts = new Date().toISOString();
-    const issueEntry = { date, product, property, qty, closingBalance: newBalance, remark: remark||'N/A', user: currentUser.name, timestamp: ts };
+    const userName = currentUser.name||currentUser.email;
+    const issueEntry = { date, product, property, qty, closingBalance: newBalance, remark: remark||'N/A', user: userName, timestamp: ts };
     const iRef = await db.collection('issues').add(issueEntry);
     cache.issues.unshift({ id: iRef.id, ...issueEntry });
-    const auditEntry = { datetime: ts, action:'Product Issued', product, qty, property, remark: remark||'N/A', user: currentUser.name, timestamp: ts };
+    const auditEntry = { datetime: ts, action:'Product Issued', product, qty, property, remark: remark||'N/A', user: userName, timestamp: ts };
     const aRef = await db.collection('audit').add(auditEntry);
     cache.audit.unshift({ id: aRef.id, ...auditEntry });
     alertEl.innerHTML = `<div class="alert alert-success">✅ ${product} (${qty} units) issued to ${property}. Closing balance: ${newBalance}</div>`;
-    toast(`Issued ${qty}x ${product} → ${property}`, 'success');
-    if (newBalance<=10) toast(`⚠️ Low stock: ${product} has only ${newBalance} units`, 'warning');
+    toast(`Issued ${qty}× ${product} → ${property}`, 'success');
+    if (newBalance<=10) toast(`⚠️ Low stock: ${product} has only ${newBalance} units left`, 'warning');
     clearIssueForm(); renderIssueHistory(''); updateAlertBadge();
-  } catch(err) {
+  } catch (err) {
     console.error(err);
-    alertEl.innerHTML='<div class="alert alert-error">❌ Failed to save. Check connection.</div>';
+    alertEl.innerHTML = '<div class="alert alert-error">❌ Save failed. Check internet.</div>';
   }
   btn.disabled=false; btn.innerHTML='✅ Issue Product';
 }
 
 function clearIssueForm() {
-  document.getElementById('ip_product').value='';
-  document.getElementById('ip_property').value='';
-  document.getElementById('ip_qty').value='';
-  document.getElementById('ip_remark').value='';
-  document.getElementById('issueBalanceDisplay').innerHTML='<span class="balance-badge">— Select product</span>';
+  document.getElementById('ip_product').value = '';
+  document.getElementById('ip_property').value = '';
+  document.getElementById('ip_qty').value = '';
+  document.getElementById('ip_remark').value = '';
+  document.getElementById('issueBalanceDisplay').innerHTML = '<span class="balance-badge">— Select product</span>';
   setDefaultDates();
 }
 
@@ -1134,7 +1115,7 @@ function renderIssueHistory(search='') {
     </tr>`).join('') : `<tr><td colspan="7"><div class="empty-state"><div class="icon">🏷️</div><p>No issues recorded yet</p></div></td></tr>`;
 }
 
-// ===== STOCK BALANCE =====
+// ── Stock Balance ─────────────────────────────────────────────────────
 function renderStockBalance(search='') {
   const tbody = document.getElementById('stockBalanceTable');
   let entries = Object.entries(cache.stock).filter(([k])=>!search||k.toLowerCase().includes(search.toLowerCase()));
@@ -1152,12 +1133,12 @@ function renderStockBalance(search='') {
   }).join('') : `<tr><td colspan="4"><div class="empty-state"><div class="icon">📋</div><p>No products in inventory</p></div></td></tr>`;
 }
 
-// ===== ISSUE REPORT =====
+// ── Issue Report ──────────────────────────────────────────────────────
 function setReportTab(tab) {
   reportTab = tab;
   ['all','Garbo','Odon','Sheldon'].forEach(t=>{
-    const btn=document.getElementById('tab-'+t);
-    if(btn){btn.style.background=t===tab?'var(--navy)':'white';btn.style.color=t===tab?'white':'var(--text-secondary)';btn.style.borderColor=t===tab?'var(--navy)':'var(--border)';}
+    const b=document.getElementById('tab-'+t);
+    if(b){b.style.background=t===tab?'var(--navy)':'white';b.style.color=t===tab?'white':'var(--text-secondary)';b.style.borderColor=t===tab?'var(--navy)':'var(--border)';}
   });
   renderIssueReport();
 }
@@ -1167,7 +1148,7 @@ function renderIssueReport() {
   const to=document.getElementById('ir_to')?.value;
   const propFilter=document.getElementById('ir_property')?.value||'';
   const prodFilter=document.getElementById('ir_product')?.value?.trim().toLowerCase()||'';
-  let filtered=cache.issues.filter(r=>{
+  const filtered = cache.issues.filter(r=>{
     if(from&&r.date<from)return false;
     if(to&&r.date>to)return false;
     if(propFilter&&r.property!==propFilter)return false;
@@ -1176,7 +1157,7 @@ function renderIssueReport() {
     return true;
   });
   const tbody=document.getElementById('issueReportTable');
-  tbody.innerHTML=filtered.length?filtered.map(r=>`
+  tbody.innerHTML = filtered.length ? filtered.map(r=>`
     <tr>
       <td data-label="Date">${formatDate(r.date)}</td>
       <td data-label="Product"><strong>${r.product}</strong></td>
@@ -1185,14 +1166,14 @@ function renderIssueReport() {
       <td data-label="Closing Bal."><span class="qty-pill">${r.closingBalance}</span></td>
       <td data-label="Remark">${r.remark}</td>
       <td data-label="By">${r.user}</td>
-    </tr>`).join(''):`<tr><td colspan="7"><div class="empty-state"><div class="icon">📈</div><p>No records found</p></div></td></tr>`;
+    </tr>`).join('') : `<tr><td colspan="7"><div class="empty-state"><div class="icon">📈</div><p>No records found</p></div></td></tr>`;
 }
 
-// ===== AUDIT =====
+// ── Audit ─────────────────────────────────────────────────────────────
 function renderAudit(search='') {
   const tbody=document.getElementById('auditTable');
   const filtered=cache.audit.filter(r=>!search||r.product.toLowerCase().includes(search.toLowerCase())||r.action.toLowerCase().includes(search.toLowerCase()));
-  tbody.innerHTML=filtered.length?filtered.map(r=>`
+  tbody.innerHTML = filtered.length ? filtered.map(r=>`
     <tr>
       <td data-label="Date & Time" style="white-space:nowrap">${formatDateTime(r.datetime)}</td>
       <td data-label="Action"><span style="background:${r.action.includes('Added')?'rgba(30,95,168,0.1)':'rgba(14,148,136,0.1)'};color:${r.action.includes('Added')?'var(--ocean)':'var(--teal)'};padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600">${r.action}</span></td>
@@ -1201,177 +1182,209 @@ function renderAudit(search='') {
       <td data-label="Property">${r.property}</td>
       <td data-label="Remark">${r.remark}</td>
       <td data-label="User">${r.user}</td>
-    </tr>`).join(''):`<tr><td colspan="7"><div class="empty-state"><div class="icon">🔍</div><p>No audit records</p></div></td></tr>`;
+    </tr>`).join('') : `<tr><td colspan="7"><div class="empty-state"><div class="icon">🔍</div><p>No audit records</p></div></td></tr>`;
 }
 
-// ===== USERS =====
+// ── User Management ───────────────────────────────────────────────────
 async function addUser() {
-  const username=document.getElementById('nu_user').value.trim();
-  const password=document.getElementById('nu_pass').value.trim();
-  const name=document.getElementById('nu_name').value.trim();
-  const role=document.getElementById('nu_role').value;
-  const alertEl=document.getElementById('userAlert');
-  const btn=document.getElementById('addUserBtn');
-  if(!username||!password||!name){alertEl.innerHTML='<div class="alert alert-error">❌ Please fill all fields.</div>';return;}
-  if(cache.users.find(u=>u.username===username)){alertEl.innerHTML='<div class="alert alert-error">❌ Username already exists.</div>';return;}
-  btn.disabled=true;btn.innerHTML='<span class="inline-spinner"></span> Adding…';
+  const name    = document.getElementById('nu_name').value.trim();
+  const email   = document.getElementById('nu_email').value.trim();
+  const pass    = document.getElementById('nu_pass').value;
+  const role    = document.getElementById('nu_role').value;
+  const alertEl = document.getElementById('userAlert');
+  const btn     = document.getElementById('addUserBtn');
+
+  if (!name||!email||!pass) { alertEl.innerHTML='<div class="alert alert-error">❌ Please fill all fields.</div>'; return; }
+  if (pass.length<6) { alertEl.innerHTML='<div class="alert alert-error">❌ Password must be at least 6 characters.</div>'; return; }
+
+  btn.disabled=true; btn.innerHTML='<span class="inline-spinner"></span> Creating…';
   try {
-    const userData={username,password,name,role,timestamp:new Date().toISOString()};
-    const ref=await db.collection('users').add(userData);
-    cache.users.push({id:ref.id,...userData});
-    alertEl.innerHTML='<div class="alert alert-success">✅ User added successfully.</div>';
-    toast('New user created','success');
-    document.getElementById('nu_user').value='';
-    document.getElementById('nu_pass').value='';
-    document.getElementById('nu_name').value='';
+    // Create in Firebase Auth via secondary app (doesn't sign out current admin)
+    const cred = await secondaryAuth.createUserWithEmailAndPassword(email, pass);
+    const uid = cred.user.uid;
+
+    // Sign out from secondary app immediately
+    await secondaryAuth.signOut();
+
+    // Save profile to Firestore
+    const profile = { name, email, role };
+    await db.collection('userProfiles').doc(uid).set(profile);
+    cache.users.push({ id: uid, ...profile });
+
+    alertEl.innerHTML = '<div class="alert alert-success">✅ User created successfully.</div>';
+    toast(`${name} added as ${role}`, 'success');
+    document.getElementById('nu_name').value = '';
+    document.getElementById('nu_email').value = '';
+    document.getElementById('nu_pass').value = '';
     renderUsers();
-  } catch(err){
+  } catch (err) {
     console.error(err);
-    alertEl.innerHTML='<div class="alert alert-error">❌ Failed to add user.</div>';
+    let msg = '❌ Failed to create user.';
+    if (err.code==='auth/email-already-in-use') msg = '❌ This email is already registered.';
+    else if (err.code==='auth/invalid-email') msg = '❌ Invalid email address.';
+    else if (err.code==='auth/weak-password') msg = '❌ Password is too weak (min 6 characters).';
+    alertEl.innerHTML = `<div class="alert alert-error">${msg}</div>`;
   }
-  btn.disabled=false;btn.innerHTML='Add User';
+  btn.disabled=false; btn.innerHTML='➕ Create User';
 }
 
 async function deleteUser(id) {
-  if(!confirm('Remove this user?'))return;
-  try{
-    await db.collection('users').doc(id).delete();
-    cache.users=cache.users.filter(u=>u.id!==id);
-    renderUsers();toast('User removed','success');
-  }catch(err){console.error(err);toast('Failed to remove user','error');}
+  if (!confirm('Remove this user? They will no longer be able to log in.')) return;
+  try {
+    // Remove Firestore profile — Firebase Auth account remains but profile lookup fails → access denied
+    await db.collection('userProfiles').doc(id).delete();
+    cache.users = cache.users.filter(u=>u.id!==id);
+    renderUsers();
+    toast('User removed', 'success');
+  } catch (err) {
+    console.error(err);
+    toast('Failed to remove user', 'error');
+  }
 }
 
 function renderUsers() {
-  const tbody=document.getElementById('userTable');
-  tbody.innerHTML=cache.users.map(u=>`
+  const tbody = document.getElementById('userTable');
+  if (!cache.users.length) {
+    tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="icon">👥</div><p>No users found</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = cache.users.map(u=>`
     <tr>
-      <td><code style="background:var(--sand);padding:2px 8px;border-radius:4px;font-size:12px">${u.username}</code></td>
       <td><strong>${u.name}</strong></td>
+      <td style="font-size:12px;color:var(--text-muted)">${u.email}</td>
       <td><span style="background:${u.role==='admin'?'rgba(30,95,168,0.1)':'rgba(14,148,136,0.1)'};color:${u.role==='admin'?'var(--ocean)':'var(--teal)'};padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;text-transform:uppercase">${u.role}</span></td>
-      <td>${u.username==='admin'?'<span style="color:var(--text-muted);font-size:12px">Protected</span>':`<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}')">🗑️ Remove</button>`}</td>
+      <td>${u.id===currentUser?.uid?'<span style="color:var(--text-muted);font-size:12px">Current User</span>':`<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}')">🗑️ Remove</button>`}</td>
     </tr>`).join('');
 }
 
-// ===== ALERTS =====
+// ── Alerts ────────────────────────────────────────────────────────────
 function getLowStockItems() {
   return Object.entries(cache.stock).filter(([,qty])=>qty<=10).sort((a,b)=>a[1]-b[1]);
 }
 function updateAlertBadge() {
-  const count=getLowStockItems().length;
-  const badge=document.getElementById('alertBadge');
-  badge.textContent=count;badge.style.display=count>0?'inline':'none';
+  const count = getLowStockItems().length;
+  const badge = document.getElementById('alertBadge');
+  badge.textContent = count;
+  badge.style.display = count>0?'inline':'none';
 }
 function renderAlerts() {
-  const items=getLowStockItems();
-  const container=document.getElementById('alertsContent');
-  if(!items.length){container.innerHTML='<div class="card"><div class="alert alert-success">✅ All products are well-stocked.</div></div>';return;}
-  const out=items.filter(([,q])=>q<=0);
-  const low=items.filter(([,q])=>q>0);
-  let html='';
-  if(out.length) html+=`<div class="card"><div class="card-title"><span>⛔</span> Out of Stock (${out.length})</div><div class="low-stock-alerts">${out.map(([p])=>`<div class="low-stock-item out"><span>⛔</span><div><div class="product-name">${p}</div><div class="stock-qty">0 units remaining</div></div></div>`).join('')}</div></div>`;
-  if(low.length) html+=`<div class="card"><div class="card-title"><span>⚠️</span> Low Stock — Below 10 Units (${low.length})</div><div class="low-stock-alerts">${low.map(([p,q])=>`<div class="low-stock-item"><span>⚠️</span><div><div class="product-name">${p}</div><div class="stock-qty">${q} units remaining</div></div></div>`).join('')}</div></div>`;
-  container.innerHTML=html;
+  const items = getLowStockItems();
+  const container = document.getElementById('alertsContent');
+  if (!items.length) { container.innerHTML='<div class="card"><div class="alert alert-success">✅ All products are well-stocked. No alerts.</div></div>'; return; }
+  const out = items.filter(([,q])=>q<=0);
+  const low = items.filter(([,q])=>q>0);
+  let html = '';
+  if (out.length) html += `<div class="card"><div class="card-title"><span>⛔</span> Out of Stock (${out.length})</div><div class="low-stock-alerts">${out.map(([p])=>`<div class="low-stock-item out"><span>⛔</span><div><div class="product-name">${p}</div><div class="stock-qty">0 units remaining</div></div></div>`).join('')}</div></div>`;
+  if (low.length) html += `<div class="card"><div class="card-title"><span>⚠️</span> Low Stock — Below 10 Units (${low.length})</div><div class="low-stock-alerts">${low.map(([p,q])=>`<div class="low-stock-item"><span>⚠️</span><div><div class="product-name">${p}</div><div class="stock-qty">${q} units remaining</div></div></div>`).join('')}</div></div>`;
+  container.innerHTML = html;
 }
 
-// ===== DASHBOARD =====
+// ── Dashboard ─────────────────────────────────────────────────────────
 function renderDashboard() {
   const stock=cache.stock; const issues=cache.issues;
   const products=Object.keys(stock);
   const totalQty=Object.values(stock).reduce((a,b)=>a+b,0);
   const totalIssued=issues.reduce((a,r)=>a+r.qty,0);
   const lowCount=getLowStockItems().length;
+
   document.getElementById('dashStats').innerHTML=`
     <div class="stat-card"><div class="stat-icon blue">📦</div><div class="stat-value">${products.length}</div><div class="stat-label">Total Products</div></div>
     <div class="stat-card"><div class="stat-icon teal">📊</div><div class="stat-value">${totalQty}</div><div class="stat-label">Total Stock Units</div></div>
     <div class="stat-card"><div class="stat-icon orange">🏷️</div><div class="stat-value">${totalIssued}</div><div class="stat-label">Total Issued</div></div>
     <div class="stat-card"><div class="stat-icon red">⚠️</div><div class="stat-value">${lowCount}</div><div class="stat-label">Low / Out of Stock</div></div>`;
+
   const props=['Garbo','Odon','Sheldon'];
   const dotClass=['dot-garbo','dot-odon','dot-sheldon'];
-  document.getElementById('propertyCards').innerHTML=props.map((p,i)=>{
+  document.getElementById('propertyCards').innerHTML = props.map((p,i)=>{
     const pi=issues.filter(r=>r.property===p);
     const pq=pi.reduce((a,r)=>a+r.qty,0);
     const last=pi[0];
-    return `<div class="property-card"><div class="property-card-header"><div class="property-dot ${dotClass[i]}"></div><div><div class="property-card-name">${p}</div><div class="property-card-sub">${p==='Garbo'?'Hotel Sea Rock Villa':p==='Odon'?'Hotel Tania Sea Rock':'Sea Rock Villa'}</div></div></div>
-      <div class="property-stat"><span class="property-stat-label">Total Issues</span><span class="property-stat-value">${pi.length}</span></div>
-      <div class="property-stat"><span class="property-stat-label">Units Consumed</span><span class="property-stat-value">${pq}</span></div>
-      <div class="property-stat"><span class="property-stat-label">Last Issue</span><span class="property-stat-value" style="font-size:11px;font-family:Inter">${last?formatDate(last.date):'Never'}</span></div>
+    return `<div class="property-card"><div class="property-card-header"><div class="property-dot ${dotClass[i]}"></div><div>
+      <div class="property-card-name">${p}</div>
+      <div class="property-card-sub">${p==='Garbo'?'Hotel Sea Rock Villa':p==='Odon'?'Hotel Tania Sea Rock':'Sea Rock Villa'}</div>
+    </div></div>
+    <div class="property-stat"><span class="property-stat-label">Total Issues</span><span class="property-stat-value">${pi.length}</span></div>
+    <div class="property-stat"><span class="property-stat-label">Units Consumed</span><span class="property-stat-value">${pq}</span></div>
+    <div class="property-stat"><span class="property-stat-label">Last Issue</span><span class="property-stat-value" style="font-size:11px;font-family:Inter">${last?formatDate(last.date):'Never'}</span></div>
     </div>`;
   }).join('');
+
   const lowItems=getLowStockItems();
-  document.getElementById('lowStockBanner').innerHTML=lowItems.length?`<div class="alert alert-warning" style="margin-bottom:16px">⚠️ <strong>${lowItems.length} product(s)</strong> running low: ${lowItems.slice(0,3).map(([p,q])=>`${p} (${q})`).join(', ')}${lowItems.length>3?'…':''} <a href="#" onclick="showPage('alerts')" style="color:inherit;font-weight:700">View alerts →</a></div>`:'';
+  document.getElementById('lowStockBanner').innerHTML = lowItems.length ?
+    `<div class="alert alert-warning" style="margin-bottom:16px">⚠️ <strong>${lowItems.length} product(s)</strong> running low: ${lowItems.slice(0,3).map(([p,q])=>`${p} (${q})`).join(', ')}${lowItems.length>3?'…':''} <a href="#" onclick="showPage('alerts')" style="color:inherit;font-weight:700">View alerts →</a></div>` : '';
+
   const tbody=document.getElementById('recentActivityTable');
   const recent=cache.audit.slice(0,8);
-  tbody.innerHTML=recent.length?recent.map(r=>`
+  tbody.innerHTML = recent.length ? recent.map(r=>`
     <tr>
       <td style="font-size:11px;color:var(--text-muted);white-space:nowrap">${formatDateTime(r.datetime)}</td>
       <td><span style="background:${r.action.includes('Added')?'rgba(30,95,168,0.1)':'rgba(14,148,136,0.1)'};color:${r.action.includes('Added')?'var(--ocean)':'var(--teal)'};padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600">${r.action}</span></td>
       <td><strong>${r.product}</strong></td>
       <td><span class="qty-pill">${r.qty}</span></td>
       <td>${r.user}</td>
-    </tr>`).join(''):`<tr><td colspan="5"><div class="empty-state"><p>No activity yet</p></div></td></tr>`;
+    </tr>`).join('') : `<tr><td colspan="5"><div class="empty-state"><p>No activity yet</p></div></td></tr>`;
+
   updateAlertBadge();
 }
 
-// ===== EXPORT =====
+// ── Export ────────────────────────────────────────────────────────────
 function exportStockExcel() {
   const data=[['#','Product Name','Balance Quantity','Status']];
   Object.entries(cache.stock).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([p,q],i)=>data.push([i+1,p,q,q<=0?'Out of Stock':q<=10?'Low Stock':'In Stock']));
-  const ws=XLSX.utils.aoa_to_sheet(data);const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(data); const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Stock Balance');
-  XLSX.writeFile(wb,`Sea_Rock_Stock_Balance_${new Date().toISOString().split('T')[0]}.xlsx`);
+  XLSX.writeFile(wb,`Sea_Rock_Stock_${new Date().toISOString().split('T')[0]}.xlsx`);
   toast('Excel exported','success');
 }
 function exportStockPDF() {
   const entries=Object.entries(cache.stock).sort((a,b)=>a[0].localeCompare(b[0]));
-  let html=`<html><head><style>body{font-family:Arial,sans-serif;padding:24px;color:#0f1f3d}h1{font-size:20px;margin-bottom:4px}p{font-size:12px;color:#718096;margin-bottom:16px}table{width:100%;border-collapse:collapse}th{background:#0f1f3d;color:white;padding:8px 12px;text-align:left;font-size:11px}td{padding:8px 12px;border-bottom:1px solid #dde3ee;font-size:12px}</style></head><body>
-  <h1>Sea Rock Inn — Stock Balance Report</h1><p>Generated: ${new Date().toLocaleString()}</p>
-  <table><tr><th>#</th><th>Product Name</th><th>Balance Qty</th><th>Status</th></tr>
-  ${entries.map(([p,q],i)=>`<tr><td>${i+1}</td><td>${p}</td><td>${q}</td><td>${q<=0?'Out of Stock':q<=10?'Low Stock':'In Stock'}</td></tr>`).join('')}
-  </table></body></html>`;
-  const win=window.open('','_blank');win.document.write(html);win.document.close();win.print();
+  const html=`<html><head><style>body{font-family:Arial;padding:24px;color:#0f1f3d}h1{font-size:18px}p{font-size:12px;color:#718096;margin-bottom:12px}table{width:100%;border-collapse:collapse}th{background:#0f1f3d;color:white;padding:8px 12px;text-align:left;font-size:11px}td{padding:8px 12px;border-bottom:1px solid #dde3ee;font-size:12px}</style></head><body>
+  <h1>Sea Rock Inn — Stock Balance</h1><p>Generated: ${new Date().toLocaleString()}</p>
+  <table><tr><th>#</th><th>Product</th><th>Balance Qty</th><th>Status</th></tr>${entries.map(([p,q],i)=>`<tr><td>${i+1}</td><td>${p}</td><td>${q}</td><td>${q<=0?'Out of Stock':q<=10?'Low Stock':'In Stock'}</td></tr>`).join('')}</table></body></html>`;
+  const win=window.open('','_blank'); win.document.write(html); win.document.close(); win.print();
 }
 function exportIssueExcel() {
   const from=document.getElementById('ir_from')?.value;
   const to=document.getElementById('ir_to')?.value;
   const propFilter=document.getElementById('ir_property')?.value||'';
-  let filtered=cache.issues.filter(r=>{
-    if(from&&r.date<from)return false;if(to&&r.date>to)return false;
+  const filtered=cache.issues.filter(r=>{
+    if(from&&r.date<from)return false; if(to&&r.date>to)return false;
     if(propFilter&&r.property!==propFilter)return false;
-    if(reportTab!=='all'&&r.property!==reportTab)return false;return true;
+    if(reportTab!=='all'&&r.property!==reportTab)return false; return true;
   });
   const data=[['Date','Product','Property','Qty Issued','Closing Balance','Remark','By']];
   filtered.forEach(r=>data.push([r.date,r.product,r.property,r.qty,r.closingBalance,r.remark,r.user]));
-  const ws=XLSX.utils.aoa_to_sheet(data);const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(data); const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Issue Report');
-  XLSX.writeFile(wb,`Sea_Rock_Issue_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+  XLSX.writeFile(wb,`Sea_Rock_Issues_${new Date().toISOString().split('T')[0]}.xlsx`);
   toast('Issue report exported','success');
 }
 
-// ===== RENDER ALL =====
-function renderAll(){renderAddHistory('');renderIssueHistory('');renderStockBalance('');renderIssueReport();renderAudit('');updateAlertBadge();}
-
-// ===== UTILS =====
-function formatDate(d) { if(!d)return'-'; const[y,m,day]=d.split('-'); return `${day}-${m}-${y}`; }
-function formatDateTime(iso) {
-  if(!iso)return'-';
-  const d=new Date(iso);
-  return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'})+' '+d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+// ── Render All ────────────────────────────────────────────────────────
+function renderAll() {
+  renderAddHistory(''); renderIssueHistory(''); renderStockBalance('');
+  renderIssueReport(); renderAudit(''); updateAlertBadge();
 }
-function toast(msg,type='') {
+
+// ── Utils ─────────────────────────────────────────────────────────────
+function formatDate(d) {
+  if(!d) return '-';
+  const [y,m,day]=d.split('-'); return `${day}-${m}-${y}`;
+}
+function formatDateTime(iso) {
+  if(!iso) return '-';
+  const d=new Date(iso);
+  return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'})
+       + ' ' + d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+}
+function toast(msg, type='') {
   const container=document.getElementById('toast');
   const el=document.createElement('div');
   el.className=`toast-msg ${type}`;
   el.innerHTML=`${type==='success'?'✅':type==='error'?'❌':type==='warning'?'⚠️':'ℹ️'} ${msg}`;
-  container.appendChild(el);setTimeout(()=>el.remove(),3500);
+  container.appendChild(el);
+  setTimeout(()=>el.remove(), 3500);
 }
-
-// ===== INIT =====
-window.addEventListener('load',()=>{
-  setTimeout(()=>{
-    document.getElementById('loadingOverlay').style.display='none';
-    document.getElementById('loginScreen').classList.add('show');
-  }, 800);
-});
 </script>
 </body>
 </html>
