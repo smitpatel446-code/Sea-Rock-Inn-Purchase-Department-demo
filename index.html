@@ -1,1144 +1,2164 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Sea Rock Inn — Purchase Department</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sea Rock Villa — Purchase Department</title>
 
-<!-- Excel export library -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Excel export library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-<!-- Firebase SDK (compat v9) — must load BEFORE firebase-config.js -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <!-- Firebase SDK (compat v9) — must load BEFORE firebase-config.js -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-<!-- Firebase config + init (API keys live here, not in this file) -->
-<script src="firebase-config.js"></script>
+  <!-- Firebase config + init (API keys live here, not in this file) -->
+  <script src="firebase-config.js"></script>
 
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
-  :root {
-    --navy: #0f1f3d;
-    --navy-mid: #1a2f52;
-    --navy-light: #243d6a;
-    --ocean: #1e5fa8;
-    --teal: #0e9488;
-    --sand: #f5f0e8;
-    --white: #ffffff;
-    --text-primary: #0f1f3d;
-    --text-secondary: #4a5568;
-    --text-muted: #718096;
-    --border: #dde3ee;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --danger: #ef4444;
-    --danger-light: #fef2f2;
-    --low-stock: #fff7ed;
-    --low-stock-border: #fed7aa;
-    --shadow-sm: 0 1px 3px rgba(15,31,61,0.08);
-    --shadow-md: 0 4px 16px rgba(15,31,61,0.12);
-    --shadow-lg: 0 8px 32px rgba(15,31,61,0.16);
-    --radius: 10px;
-    --radius-sm: 6px;
-    --sidebar-w: 220px;
-    --header-h: 60px;
-  }
+    :root {
+      --navy: #0f1f3d;
+      --navy-mid: #1a2f52;
+      --navy-light: #243d6a;
+      --ocean: #1e5fa8;
+      --teal: #0e9488;
+      --sand: #f5f0e8;
+      --white: #ffffff;
+      --text-primary: #0f1f3d;
+      --text-secondary: #4a5568;
+      --text-muted: #718096;
+      --border: #dde3ee;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --danger-light: #fef2f2;
+      --low-stock: #fff7ed;
+      --low-stock-border: #fed7aa;
+      --shadow-sm: 0 1px 3px rgba(15, 31, 61, 0.08);
+      --shadow-md: 0 4px 16px rgba(15, 31, 61, 0.12);
+      --shadow-lg: 0 8px 32px rgba(15, 31, 61, 0.16);
+      --radius: 10px;
+      --radius-sm: 6px;
+      --sidebar-w: 220px;
+      --header-h: 60px;
+    }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-  body {
-    font-family: 'Inter', sans-serif;
-    background: var(--sand);
-    color: var(--text-primary);
-    min-height: 100vh;
-    font-size: 14px;
-    -webkit-tap-highlight-color: transparent;
-  }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--sand);
+      color: var(--text-primary);
+      min-height: 100vh;
+      font-size: 14px;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-  /* ===== LOADING OVERLAY ===== */
-  #loadingOverlay {
-    position: fixed; inset: 0;
-    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 50%, var(--ocean) 100%);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 9999; flex-direction: column; gap: 16px;
-  }
-  #loadingOverlay .spinner {
-    width: 48px; height: 48px;
-    border: 4px solid rgba(255,255,255,0.2);
-    border-top-color: white; border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-  #loadingOverlay p { color: rgba(255,255,255,0.7); font-size: 14px; letter-spacing: 0.3px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+    /* ===== LOADING OVERLAY ===== */
+    #loadingOverlay {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 50%, var(--ocean) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      flex-direction: column;
+      gap: 16px;
+    }
 
-  /* ===== LOGIN ===== */
-  #loginScreen {
-    min-height: 100vh;
-    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 50%, var(--ocean) 100%);
-    display: none; align-items: center; justify-content: center;
-    position: relative; overflow: hidden; padding: 16px;
-  }
-  #loginScreen.show { display: flex; }
-  #loginScreen::before {
-    content: ''; position: absolute; width: 600px; height: 600px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(30,95,168,0.3) 0%, transparent 70%);
-    top: -200px; right: -100px;
-  }
-  #loginScreen::after {
-    content: ''; position: absolute; width: 400px; height: 400px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(14,148,136,0.2) 0%, transparent 70%);
-    bottom: -100px; left: -50px;
-  }
-  .login-card {
-    background: white; border-radius: 16px; padding: 40px 32px;
-    width: 100%; max-width: 420px; box-shadow: var(--shadow-lg);
-    position: relative; z-index: 1;
-  }
-  .login-logo { text-align: center; margin-bottom: 28px; }
-  .login-logo .wave-icon { font-size: 40px; display: block; margin-bottom: 12px; }
-  .login-logo h1 { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--navy); letter-spacing: 0.5px; }
-  .login-logo p { font-size: 12px; color: var(--text-muted); margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; }
-  .login-divider { height: 1px; background: var(--border); margin: 20px 0; }
+    #loadingOverlay .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(255, 255, 255, 0.2);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
 
-  .form-group { margin-bottom: 16px; }
-  .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; letter-spacing: 0.5px; text-transform: uppercase; }
-  .form-input {
-    width: 100%; padding: 12px 14px;
-    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
-    font-size: 16px; font-family: 'Inter', sans-serif;
-    color: var(--text-primary); background: white;
-    transition: border-color 0.2s, box-shadow 0.2s; outline: none;
-  }
-  .form-input:focus { border-color: var(--ocean); box-shadow: 0 0 0 3px rgba(30,95,168,0.1); }
-  .btn-primary {
-    width: 100%; padding: 14px;
-    background: linear-gradient(135deg, var(--ocean) 0%, var(--navy-light) 100%);
-    color: white; border: none; border-radius: var(--radius-sm);
-    font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s;
-    min-height: 50px; font-family: 'Inter', sans-serif;
-  }
-  .btn-primary:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
-  .btn-primary:disabled { opacity: 0.6; transform: none; cursor: not-allowed; }
+    #loadingOverlay p {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 14px;
+      letter-spacing: 0.3px;
+    }
 
-  /* ===== APP SHELL ===== */
-  #app { display: none; min-height: 100vh; }
-  #app.show { display: block; }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
 
-  /* HEADER */
-  .header {
-    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
-    padding: 0 16px; display: flex; align-items: center; justify-content: space-between;
-    height: var(--header-h); position: sticky; top: 0; z-index: 100;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
-  }
-  .header-left { display: flex; align-items: center; gap: 12px; }
-  .hamburger {
-    display: none; background: none; border: none; cursor: pointer;
-    padding: 8px; border-radius: 6px; color: white; font-size: 22px; line-height: 1;
-    transition: background 0.2s; min-width: 40px; min-height: 40px;
-    align-items: center; justify-content: center;
-  }
-  .hamburger:hover { background: rgba(255,255,255,0.1); }
-  .header-brand { display: flex; align-items: center; gap: 10px; }
-  .header-brand .wave { font-size: 20px; }
-  .header-brand-text h1 { font-family: 'Playfair Display', serif; font-size: 15px; color: white; }
-  .header-brand-text p { font-size: 10px; color: rgba(255,255,255,0.5); letter-spacing: 1.5px; text-transform: uppercase; }
-  .header-right { display: flex; align-items: center; gap: 10px; }
-  .user-badge {
-    display: flex; align-items: center; gap: 8px;
-    background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 20px;
-  }
-  .user-avatar { width: 28px; height: 28px; background: var(--teal); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: white; flex-shrink: 0; }
-  .user-info .name { font-size: 12px; font-weight: 600; color: white; }
-  .user-info .role { font-size: 10px; color: rgba(255,255,255,0.5); }
-  .btn-logout { background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
-  .btn-logout:hover { background: rgba(239,68,68,0.4); }
+    /* ===== LOGIN ===== */
+    #loginScreen {
+      min-height: 100vh;
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 50%, var(--ocean) 100%);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      padding: 16px;
+    }
 
-  /* LAYOUT */
-  .layout { display: flex; min-height: calc(100vh - var(--header-h)); }
+    #loginScreen.show {
+      display: flex;
+    }
 
-  /* SIDEBAR OVERLAY */
-  .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 150; }
-  .sidebar-overlay.open { display: block; }
+    #loginScreen::before {
+      content: '';
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(30, 95, 168, 0.3) 0%, transparent 70%);
+      top: -200px;
+      right: -100px;
+    }
 
-  /* SIDEBAR */
-  .sidebar {
-    width: var(--sidebar-w); background: white; border-right: 1px solid var(--border);
-    padding: 16px 0; flex-shrink: 0; position: sticky; top: var(--header-h);
-    height: calc(100vh - var(--header-h)); overflow-y: auto; transition: transform 0.3s ease;
-  }
-  .sidebar-section { padding: 0 12px; margin-bottom: 20px; }
-  .sidebar-section-title { font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; padding: 0 8px; margin-bottom: 6px; }
-  .nav-item { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text-secondary); transition: all 0.15s; margin-bottom: 2px; position: relative; min-height: 44px; }
-  .nav-item:hover { background: var(--sand); color: var(--navy); }
-  .nav-item.active { background: linear-gradient(135deg, rgba(30,95,168,0.1) 0%, rgba(14,148,136,0.05) 100%); color: var(--ocean); font-weight: 600; }
-  .nav-item.active::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 3px; background: var(--ocean); border-radius: 0 3px 3px 0; }
-  .nav-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
-  .nav-badge { margin-left: auto; background: var(--danger); color: white; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; min-width: 18px; text-align: center; }
+    #loginScreen::after {
+      content: '';
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(14, 148, 136, 0.2) 0%, transparent 70%);
+      bottom: -100px;
+      left: -50px;
+    }
 
-  /* MAIN */
-  .main { flex: 1; padding: 20px 16px; overflow-x: hidden; min-width: 0; }
+    .login-card {
+      background: white;
+      border-radius: 16px;
+      padding: 40px 32px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      z-index: 1;
+    }
 
-  .page-title { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--navy); margin-bottom: 4px; }
-  .page-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+    .login-logo {
+      text-align: center;
+      margin-bottom: 28px;
+    }
 
-  /* CARDS */
-  .card { background: white; border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); margin-bottom: 16px; }
-  .card-title { font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-  .card-title span { font-size: 16px; }
+    .login-logo .wave-icon {
+      font-size: 40px;
+      display: block;
+      margin-bottom: 12px;
+    }
 
-  /* STAT CARDS */
-  .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
-  .stat-card { background: white; border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
-  .stat-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
-  .stat-icon.blue { background: rgba(30,95,168,0.1); }
-  .stat-icon.teal { background: rgba(14,148,136,0.1); }
-  .stat-icon.orange { background: rgba(245,158,11,0.1); }
-  .stat-icon.red { background: rgba(239,68,68,0.1); }
-  .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 500; color: var(--navy); line-height: 1; }
-  .stat-label { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+    .login-logo h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      color: var(--navy);
+      letter-spacing: 0.5px;
+    }
 
-  /* FORM */
-  .form-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
-  .form-group-inline { display: flex; flex-direction: column; gap: 6px; }
-  select.form-input { cursor: pointer; }
+    .login-logo p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
 
-  /* AUTOCOMPLETE */
-  .autocomplete-wrapper { position: relative; }
-  .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1.5px solid var(--ocean); border-top: none; border-radius: 0 0 var(--radius-sm) var(--radius-sm); max-height: 220px; overflow-y: auto; z-index: 50; box-shadow: var(--shadow-md); }
-  .autocomplete-item { padding: 12px 14px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px; transition: background 0.1s; min-height: 44px; }
-  .autocomplete-item:hover { background: var(--sand); }
-  .autocomplete-item.new-product { color: var(--teal); font-weight: 600; }
-  .autocomplete-divider { height: 1px; background: var(--border); margin: 4px 0; }
+    .login-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 20px 0;
+    }
 
-  /* BUTTONS */
-  .btn { padding: 10px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; font-family: 'Inter', sans-serif; min-height: 44px; white-space: nowrap; }
-  .btn-ocean { background: linear-gradient(135deg, var(--ocean) 0%, var(--navy-light) 100%); color: white; }
-  .btn-ocean:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
-  .btn-teal { background: var(--teal); color: white; }
-  .btn-teal:hover { background: #0d8077; }
-  .btn-outline { background: white; border: 1.5px solid var(--border); color: var(--text-secondary); }
-  .btn-outline:hover { border-color: var(--ocean); color: var(--ocean); }
-  .btn-danger { background: var(--danger); color: white; }
-  .btn-sm { padding: 8px 12px; font-size: 12px; min-height: 36px; }
-  .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
-  .btn-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .form-group {
+      margin-bottom: 16px;
+    }
 
-  /* BALANCE BADGE */
-  .balance-badge { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; background: rgba(14,148,136,0.1); color: var(--teal); border: 1px solid rgba(14,148,136,0.2); }
-  .balance-badge.low { background: var(--low-stock); color: #c2410c; border-color: var(--low-stock-border); }
-  .balance-badge.empty { background: var(--danger-light); color: var(--danger); border-color: #fecaca; }
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
 
-  /* TABLE */
-  .table-wrapper { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); -webkit-overflow-scrolling: touch; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  thead tr { background: var(--navy); }
-  thead th { padding: 12px 14px; text-align: left; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.8); letter-spacing: 0.8px; text-transform: uppercase; white-space: nowrap; }
-  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
-  tbody tr:hover { background: rgba(245,240,232,0.5); }
-  tbody tr:last-child { border-bottom: none; }
-  tbody td { padding: 11px 14px; color: var(--text-secondary); vertical-align: middle; }
-  tbody td strong { color: var(--text-primary); }
+    .form-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 16px;
+      font-family: 'Inter', sans-serif;
+      color: var(--text-primary);
+      background: white;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
 
-  .qty-pill { display: inline-block; padding: 3px 10px; border-radius: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 500; background: rgba(30,95,168,0.08); color: var(--ocean); }
-  .qty-pill.low { background: var(--low-stock); color: #c2410c; }
-  .qty-pill.empty { background: var(--danger-light); color: var(--danger); }
-  .qty-pill.issued { background: rgba(14,148,136,0.08); color: var(--teal); }
+    .form-input:focus {
+      border-color: var(--ocean);
+      box-shadow: 0 0 0 3px rgba(30, 95, 168, 0.1);
+    }
 
-  .property-tag { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; letter-spacing: 0.3px; }
-  .prop-garbo { background: rgba(30,95,168,0.1); color: var(--ocean); }
-  .prop-odon { background: rgba(14,148,136,0.1); color: var(--teal); }
-  .prop-sheldon { background: rgba(88,28,135,0.1); color: #7c3aed; }
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--ocean) 0%, var(--navy-light) 100%);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      min-height: 50px;
+      font-family: 'Inter', sans-serif;
+    }
 
-  /* FILTER BAR */
-  .filter-bar { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 14px; }
-  .filter-bar .form-group { margin-bottom: 0; min-width: 140px; }
-  .search-input-wrapper { position: relative; flex: 1; min-width: 180px; }
-  .search-input-wrapper input { padding-left: 36px; }
-  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 14px; pointer-events: none; }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
 
-  /* ALERT */
-  .alert { padding: 12px 16px; border-radius: var(--radius-sm); font-size: 13px; display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; line-height: 1.5; }
-  .alert-success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
-  .alert-error { background: var(--danger-light); color: #991b1b; border: 1px solid #fecaca; }
-  .alert-warning { background: var(--low-stock); color: #92400e; border: 1px solid var(--low-stock-border); }
-  .alert-info { background: rgba(30,95,168,0.06); color: var(--navy); border: 1px solid rgba(30,95,168,0.2); }
+    .btn-primary:disabled {
+      opacity: 0.6;
+      transform: none;
+      cursor: not-allowed;
+    }
 
-  /* LOW STOCK */
-  .low-stock-alerts { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-bottom: 16px; }
-  .low-stock-item { background: var(--low-stock); border: 1px solid var(--low-stock-border); border-radius: var(--radius-sm); padding: 12px 14px; display: flex; align-items: center; gap: 10px; }
-  .low-stock-item.out { background: var(--danger-light); border-color: #fecaca; }
-  .low-stock-item .product-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-  .low-stock-item .stock-qty { font-size: 12px; color: var(--text-muted); }
+    /* ===== APP SHELL ===== */
+    #app {
+      display: none;
+      min-height: 100vh;
+    }
 
-  /* PROPERTY CARDS */
-  .property-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
-  .property-card { background: white; border-radius: var(--radius); padding: 16px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
-  .property-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-  .property-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  .dot-garbo { background: var(--ocean); } .dot-odon { background: var(--teal); } .dot-sheldon { background: #7c3aed; }
-  .property-card-name { font-size: 13px; font-weight: 700; color: var(--navy); }
-  .property-card-sub { font-size: 11px; color: var(--text-muted); }
-  .property-stat { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-  .property-stat-label { font-size: 12px; color: var(--text-muted); }
-  .property-stat-value { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; color: var(--navy); }
+    #app.show {
+      display: block;
+    }
 
-  /* TOAST */
-  #toast { position: fixed; bottom: 16px; right: 16px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; max-width: calc(100vw - 32px); }
-  .toast-msg { background: var(--navy); color: white; padding: 12px 18px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 8px; animation: slideIn 0.3s ease; max-width: 320px; }
-  .toast-msg.success { background: var(--success); }
-  .toast-msg.error { background: var(--danger); }
-  .toast-msg.warning { background: var(--warning); color: var(--navy); }
-  @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: none; opacity: 1; } }
+    /* HEADER */
+    .header {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: var(--header-h);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+    }
 
-  /* PAGES */
-  .page { display: none; }
-  .page.active { display: block; }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
 
-  /* EMPTY STATE */
-  .empty-state { text-align: center; padding: 40px 16px; color: var(--text-muted); }
-  .empty-state .icon { font-size: 36px; margin-bottom: 10px; }
-  .empty-state p { font-size: 14px; }
+    .hamburger {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 6px;
+      color: white;
+      font-size: 22px;
+      line-height: 1;
+      transition: background 0.2s;
+      min-width: 40px;
+      min-height: 40px;
+      align-items: center;
+      justify-content: center;
+    }
 
-  /* INLINE SPINNER */
-  .inline-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
+    .hamburger:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
 
-  /* PRINT */
-  @media print {
-    .header, .sidebar, .filter-bar .btn-group, .no-print, .sidebar-overlay, .hamburger { display: none !important; }
-    .main { padding: 0; } .layout { display: block; } body { background: white; }
-  }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-  /* SCROLLBAR */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: var(--sand); }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .header-brand .wave {
+      font-size: 20px;
+    }
 
-  /* ===== MOBILE ===== */
-  @media (max-width: 768px) {
-    :root { --header-h: 54px; }
-    .hamburger { display: flex; }
-    .sidebar { position: fixed; left: 0; top: var(--header-h); height: calc(100vh - var(--header-h)); z-index: 160; transform: translateX(-100%); box-shadow: var(--shadow-lg); }
-    .sidebar.open { transform: translateX(0); }
-    .main { padding: 14px 12px; }
-    .header-brand-text p, .user-info { display: none; }
-    .stats-grid { gap: 10px; } .stat-value { font-size: 20px; }
-    .property-cards { grid-template-columns: 1fr; }
-    .form-grid { grid-template-columns: 1fr; }
-    .filter-bar { flex-direction: column; align-items: stretch; }
-    .filter-bar > * { min-width: unset !important; }
-    .btn { padding: 10px 14px; font-size: 12px; }
-    .low-stock-alerts { grid-template-columns: 1fr 1fr; }
-    .page-title { font-size: 19px; }
-    #toast { bottom: 12px; right: 12px; left: 12px; }
-    .toast-msg { max-width: 100%; }
-  }
+    .header-brand-text h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 15px;
+      color: white;
+    }
 
-  @media (max-width: 480px) {
-    .property-cards, .low-stock-alerts { grid-template-columns: 1fr; }
-    /* Card-style responsive tables */
-    .resp-table table, .resp-table thead, .resp-table tbody, .resp-table th, .resp-table td, .resp-table tr { display: block; }
-    .resp-table thead { display: none; }
-    .resp-table .table-wrapper { border: none; overflow: visible; background: transparent; }
-    .resp-table tbody tr { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; padding: 12px; background: white; box-shadow: var(--shadow-sm); }
-    .resp-table tbody tr:last-child { border-bottom: 1px solid var(--border); }
-    .resp-table tbody td { padding: 5px 0; border: none; display: flex; justify-content: space-between; align-items: center; font-size: 12px; gap: 8px; }
-    .resp-table tbody td::before { content: attr(data-label); font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; }
-  }
-</style>
+    .header-brand-text p {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.5);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 5px 10px;
+      border-radius: 20px;
+    }
+
+    .user-avatar {
+      width: 28px;
+      height: 28px;
+      background: var(--teal);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .user-info .name {
+      font-size: 12px;
+      font-weight: 600;
+      color: white;
+    }
+
+    .user-info .role {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .btn-logout {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-logout:hover {
+      background: rgba(239, 68, 68, 0.4);
+    }
+
+    /* LAYOUT */
+    .layout {
+      display: flex;
+      min-height: calc(100vh - var(--header-h));
+    }
+
+    /* SIDEBAR OVERLAY */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 150;
+    }
+
+    .sidebar-overlay.open {
+      display: block;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: white;
+      border-right: 1px solid var(--border);
+      padding: 16px 0;
+      flex-shrink: 0;
+      position: sticky;
+      top: var(--header-h);
+      height: calc(100vh - var(--header-h));
+      overflow-y: auto;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar-section {
+      padding: 0 12px;
+      margin-bottom: 20px;
+    }
+
+    .sidebar-section-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 0 8px;
+      margin-bottom: 6px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: all 0.15s;
+      margin-bottom: 2px;
+      position: relative;
+      min-height: 44px;
+    }
+
+    .nav-item:hover {
+      background: var(--sand);
+      color: var(--navy);
+    }
+
+    .nav-item.active {
+      background: linear-gradient(135deg, rgba(30, 95, 168, 0.1) 0%, rgba(14, 148, 136, 0.05) 100%);
+      color: var(--ocean);
+      font-weight: 600;
+    }
+
+    .nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 4px;
+      bottom: 4px;
+      width: 3px;
+      background: var(--ocean);
+      border-radius: 0 3px 3px 0;
+    }
+
+    .nav-icon {
+      font-size: 16px;
+      width: 20px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .nav-badge {
+      margin-left: auto;
+      background: var(--danger);
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 10px;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    /* MAIN */
+    .main {
+      flex: 1;
+      padding: 20px 16px;
+      overflow-x: hidden;
+      min-width: 0;
+    }
+
+    .page-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      color: var(--navy);
+      margin-bottom: 4px;
+    }
+
+    .page-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    /* CARDS */
+    .card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title span {
+      font-size: 16px;
+    }
+
+    /* STAT CARDS */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .stat-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .stat-icon.blue {
+      background: rgba(30, 95, 168, 0.1);
+    }
+
+    .stat-icon.teal {
+      background: rgba(14, 148, 136, 0.1);
+    }
+
+    .stat-icon.orange {
+      background: rgba(245, 158, 11, 0.1);
+    }
+
+    .stat-icon.red {
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 24px;
+      font-weight: 500;
+      color: var(--navy);
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* FORM */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .form-group-inline {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    select.form-input {
+      cursor: pointer;
+    }
+
+    /* AUTOCOMPLETE */
+    .autocomplete-wrapper {
+      position: relative;
+    }
+
+    .autocomplete-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1.5px solid var(--ocean);
+      border-top: none;
+      border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 50;
+      box-shadow: var(--shadow-md);
+    }
+
+    .autocomplete-item {
+      padding: 12px 14px;
+      cursor: pointer;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.1s;
+      min-height: 44px;
+    }
+
+    .autocomplete-item:hover {
+      background: var(--sand);
+    }
+
+    .autocomplete-item.new-product {
+      color: var(--teal);
+      font-weight: 600;
+    }
+
+    .autocomplete-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
+    }
+
+    /* BUTTONS */
+    .btn {
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Inter', sans-serif;
+      min-height: 44px;
+      white-space: nowrap;
+    }
+
+    .btn-ocean {
+      background: linear-gradient(135deg, var(--ocean) 0%, var(--navy-light) 100%);
+      color: white;
+    }
+
+    .btn-ocean:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-teal {
+      background: var(--teal);
+      color: white;
+    }
+
+    .btn-teal:hover {
+      background: #0d8077;
+    }
+
+    .btn-outline {
+      background: white;
+      border: 1.5px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--ocean);
+      color: var(--ocean);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+
+    .btn-sm {
+      padding: 8px 12px;
+      font-size: 12px;
+      min-height: 36px;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    /* BALANCE BADGE */
+    .balance-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      background: rgba(14, 148, 136, 0.1);
+      color: var(--teal);
+      border: 1px solid rgba(14, 148, 136, 0.2);
+    }
+
+    .balance-badge.low {
+      background: var(--low-stock);
+      color: #c2410c;
+      border-color: var(--low-stock-border);
+    }
+
+    .balance-badge.empty {
+      background: var(--danger-light);
+      color: var(--danger);
+      border-color: #fecaca;
+    }
+
+    /* TABLE */
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead tr {
+      background: var(--navy);
+    }
+
+    thead th {
+      padding: 12px 14px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.8);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+
+    tbody tr:hover {
+      background: rgba(245, 240, 232, 0.5);
+    }
+
+    tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    tbody td {
+      padding: 11px 14px;
+      color: var(--text-secondary);
+      vertical-align: middle;
+    }
+
+    tbody td strong {
+      color: var(--text-primary);
+    }
+
+    .qty-pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 500;
+      background: rgba(30, 95, 168, 0.08);
+      color: var(--ocean);
+    }
+
+    .qty-pill.low {
+      background: var(--low-stock);
+      color: #c2410c;
+    }
+
+    .qty-pill.empty {
+      background: var(--danger-light);
+      color: var(--danger);
+    }
+
+    .qty-pill.issued {
+      background: rgba(14, 148, 136, 0.08);
+      color: var(--teal);
+    }
+
+    .property-tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    .prop-garbo {
+      background: rgba(30, 95, 168, 0.1);
+      color: var(--ocean);
+    }
+
+    .prop-odon {
+      background: rgba(14, 148, 136, 0.1);
+      color: var(--teal);
+    }
+
+    .prop-sheldon {
+      background: rgba(88, 28, 135, 0.1);
+      color: #7c3aed;
+    }
+
+    /* FILTER BAR */
+    .filter-bar {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .filter-bar .form-group {
+      margin-bottom: 0;
+      min-width: 140px;
+    }
+
+    .search-input-wrapper {
+      position: relative;
+      flex: 1;
+      min-width: 180px;
+    }
+
+    .search-input-wrapper input {
+      padding-left: 36px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 14px;
+      pointer-events: none;
+    }
+
+    /* ALERT */
+    .alert {
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+
+    .alert-success {
+      background: #ecfdf5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+
+    .alert-error {
+      background: var(--danger-light);
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    .alert-warning {
+      background: var(--low-stock);
+      color: #92400e;
+      border: 1px solid var(--low-stock-border);
+    }
+
+    .alert-info {
+      background: rgba(30, 95, 168, 0.06);
+      color: var(--navy);
+      border: 1px solid rgba(30, 95, 168, 0.2);
+    }
+
+    /* LOW STOCK */
+    .low-stock-alerts {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .low-stock-item {
+      background: var(--low-stock);
+      border: 1px solid var(--low-stock-border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .low-stock-item.out {
+      background: var(--danger-light);
+      border-color: #fecaca;
+    }
+
+    .low-stock-item .product-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .low-stock-item .stock-qty {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* PROPERTY CARDS */
+    .property-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .property-card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 16px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .property-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .property-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .dot-garbo {
+      background: var(--ocean);
+    }
+
+    .dot-odon {
+      background: var(--teal);
+    }
+
+    .dot-sheldon {
+      background: #7c3aed;
+    }
+
+    .property-card-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    .property-card-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .property-stat {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .property-stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .property-stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--navy);
+    }
+
+    /* TOAST */
+    #toast {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+      max-width: calc(100vw - 32px);
+    }
+
+    .toast-msg {
+      background: var(--navy);
+      color: white;
+      padding: 12px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: slideIn 0.3s ease;
+      max-width: 320px;
+    }
+
+    .toast-msg.success {
+      background: var(--success);
+    }
+
+    .toast-msg.error {
+      background: var(--danger);
+    }
+
+    .toast-msg.warning {
+      background: var(--warning);
+      color: var(--navy);
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100px);
+        opacity: 0;
+      }
+
+      to {
+        transform: none;
+        opacity: 1;
+      }
+    }
+
+    /* PAGES */
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    /* EMPTY STATE */
+    .empty-state {
+      text-align: center;
+      padding: 40px 16px;
+      color: var(--text-muted);
+    }
+
+    .empty-state .icon {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+    }
+
+    /* INLINE SPINNER */
+    .inline-spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    /* PRINT */
+    @media print {
+
+      .header,
+      .sidebar,
+      .filter-bar .btn-group,
+      .no-print,
+      .sidebar-overlay,
+      .hamburger {
+        display: none !important;
+      }
+
+      .main {
+        padding: 0;
+      }
+
+      .layout {
+        display: block;
+      }
+
+      body {
+        background: white;
+      }
+    }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--sand);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+
+    /* ===== MOBILE ===== */
+    @media (max-width: 768px) {
+      :root {
+        --header-h: 54px;
+      }
+
+      .hamburger {
+        display: flex;
+      }
+
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: var(--header-h);
+        height: calc(100vh - var(--header-h));
+        z-index: 160;
+        transform: translateX(-100%);
+        box-shadow: var(--shadow-lg);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .main {
+        padding: 14px 12px;
+      }
+
+      .header-brand-text p,
+      .user-info {
+        display: none;
+      }
+
+      .stats-grid {
+        gap: 10px;
+      }
+
+      .stat-value {
+        font-size: 20px;
+      }
+
+      .property-cards {
+        grid-template-columns: 1fr;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .filter-bar>* {
+        min-width: unset !important;
+      }
+
+      .btn {
+        padding: 10px 14px;
+        font-size: 12px;
+      }
+
+      .low-stock-alerts {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .page-title {
+        font-size: 19px;
+      }
+
+      #toast {
+        bottom: 12px;
+        right: 12px;
+        left: 12px;
+      }
+
+      .toast-msg {
+        max-width: 100%;
+      }
+    }
+
+    @media (max-width: 480px) {
+
+      .property-cards,
+      .low-stock-alerts {
+        grid-template-columns: 1fr;
+      }
+
+      /* Card-style responsive tables */
+      .resp-table table,
+      .resp-table thead,
+      .resp-table tbody,
+      .resp-table th,
+      .resp-table td,
+      .resp-table tr {
+        display: block;
+      }
+
+      .resp-table thead {
+        display: none;
+      }
+
+      .resp-table .table-wrapper {
+        border: none;
+        overflow: visible;
+        background: transparent;
+      }
+
+      .resp-table tbody tr {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 10px;
+        padding: 12px;
+        background: white;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .resp-table tbody tr:last-child {
+        border-bottom: 1px solid var(--border);
+      }
+
+      .resp-table tbody td {
+        padding: 5px 0;
+        border: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        gap: 8px;
+      }
+
+      .resp-table tbody td::before {
+        content: attr(data-label);
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        flex-shrink: 0;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<!-- LOADING -->
-<div id="loadingOverlay">
-  <div class="spinner"></div>
-  <p>Connecting to Sea Rock Inn…</p>
-</div>
+  <!-- LOADING -->
+  <div id="loadingOverlay">
+    <div class="spinner"></div>
+    <p>Connecting to Sea Rock Villa…</p>
+  </div>
 
-<!-- LOGIN -->
-<div id="loginScreen">
-  <div class="login-card">
-    <div class="login-logo">
-      <span class="wave-icon">🌊</span>
-      <h1>Sea Rock Inn</h1>
-      <p>Purchase Department Portal</p>
-    </div>
-    <div class="login-divider"></div>
-    <div id="loginAlert"></div>
-    <div class="form-group">
-      <label class="form-label">Email Address</label>
-      <input type="email" class="form-input" id="loginEmail" placeholder="you@searockinn.com"
-        autocomplete="email" inputmode="email"
-        onkeydown="if(event.key==='Enter') document.getElementById('loginPass').focus()" />
-    </div>
-    <div class="form-group">
-      <label class="form-label">Password</label>
-      <input type="password" class="form-input" id="loginPass" placeholder="Enter password"
-        autocomplete="current-password"
-        onkeydown="if(event.key==='Enter') doLogin()" />
-    </div>
-    <button class="btn-primary" id="loginBtn" onclick="doLogin()">Sign In →</button>
-    <div style="margin-top:14px;text-align:center;font-size:11px;color:var(--text-muted)">
-      Forgot password? Contact your administrator.
+  <!-- LOGIN -->
+  <div id="loginScreen">
+    <div class="login-card">
+      <div class="login-logo">
+        <span class="wave-icon">🌊</span>
+        <h1>Sea Rock Villa</h1>
+        <p>Purchase Department Portal</p>
+      </div>
+      <div class="login-divider"></div>
+      <div id="loginAlert"></div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input type="email" class="form-input" id="loginEmail" placeholder="you@searockinn.com" autocomplete="email"
+          inputmode="email" onkeydown="if(event.key==='Enter') document.getElementById('loginPass').focus()" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-input" id="loginPass" placeholder="Enter password"
+          autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()" />
+      </div>
+      <button class="btn-primary" id="loginBtn" onclick="doLogin()">Sign In →</button>
+      <div style="margin-top:14px;text-align:center;font-size:11px;color:var(--text-muted)">
+        Forgot password? Contact your administrator.
+      </div>
     </div>
   </div>
-</div>
 
-<!-- APP -->
-<div id="app">
-  <header class="header">
-    <div class="header-left">
-      <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()" aria-label="Menu">☰</button>
-      <div class="header-brand">
-        <span class="wave">🌊</span>
-        <div class="header-brand-text">
-          <h1>Sea Rock Inn</h1>
-          <p>Purchase Department</p>
+  <!-- APP -->
+  <div id="app">
+    <header class="header">
+      <div class="header-left">
+        <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+        <div class="header-brand">
+          <span class="wave">🌊</span>
+          <div class="header-brand-text">
+            <h1>Sea Rock Villa</h1>
+            <p>Purchase Department</p>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="header-right">
-      <div class="user-badge">
-        <div class="user-avatar" id="userAvatar">A</div>
-        <div class="user-info">
-          <div class="name" id="headerUserName">User</div>
-          <div class="role" id="headerUserRole">Staff</div>
+      <div class="header-right">
+        <div class="user-badge">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div class="user-info">
+            <div class="name" id="headerUserName">User</div>
+            <div class="role" id="headerUserRole">Staff</div>
+          </div>
         </div>
+        <button class="btn-logout" onclick="doLogout()">Sign Out</button>
       </div>
-      <button class="btn-logout" onclick="doLogout()">Sign Out</button>
-    </div>
-  </header>
+    </header>
 
-  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
-  <div class="layout">
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-section">
-        <div class="sidebar-section-title">Overview</div>
-        <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
-          <span class="nav-icon">📊</span> Dashboard
+    <div class="layout">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Overview</div>
+          <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
+            <span class="nav-icon">📊</span> Dashboard
+          </div>
         </div>
-      </div>
-      <div class="sidebar-section">
-        <div class="sidebar-section-title">Inventory</div>
-        <div class="nav-item" onclick="showPage('addProduct')" id="nav-addProduct">
-          <span class="nav-icon">📦</span> Add Product
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Inventory</div>
+          <div class="nav-item" onclick="showPage('addProduct')" id="nav-addProduct">
+            <span class="nav-icon">📦</span> Add Product
+          </div>
+          <div class="nav-item" onclick="showPage('issueProduct')" id="nav-issueProduct">
+            <span class="nav-icon">🏷️</span> Issue Product
+          </div>
+          <div class="nav-item" onclick="showPage('stockBalance')" id="nav-stockBalance">
+            <span class="nav-icon">📋</span> Stock Balance
+          </div>
         </div>
-        <div class="nav-item" onclick="showPage('issueProduct')" id="nav-issueProduct">
-          <span class="nav-icon">🏷️</span> Issue Product
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Reports</div>
+          <div class="nav-item" onclick="showPage('issueReport')" id="nav-issueReport">
+            <span class="nav-icon">📈</span> Issue Reports
+          </div>
+          <div class="nav-item" onclick="showPage('auditTrail')" id="nav-auditTrail">
+            <span class="nav-icon">🔍</span> Audit Trail
+          </div>
         </div>
-        <div class="nav-item" onclick="showPage('stockBalance')" id="nav-stockBalance">
-          <span class="nav-icon">📋</span> Stock Balance
+        <div class="sidebar-section" id="adminOnlyNav" style="display:none">
+          <div class="sidebar-section-title">Admin</div>
+          <div class="nav-item" onclick="showPage('userManagement')" id="nav-userManagement">
+            <span class="nav-icon">👤</span> User Management
+          </div>
+          <div class="nav-item" onclick="showPage('alerts')" id="nav-alerts">
+            <span class="nav-icon">🔔</span> Alerts
+            <span class="nav-badge" id="alertBadge" style="display:none">0</span>
+          </div>
         </div>
-      </div>
-      <div class="sidebar-section">
-        <div class="sidebar-section-title">Reports</div>
-        <div class="nav-item" onclick="showPage('issueReport')" id="nav-issueReport">
-          <span class="nav-icon">📈</span> Issue Reports
-        </div>
-        <div class="nav-item" onclick="showPage('auditTrail')" id="nav-auditTrail">
-          <span class="nav-icon">🔍</span> Audit Trail
-        </div>
-      </div>
-      <div class="sidebar-section" id="adminOnlyNav" style="display:none">
-        <div class="sidebar-section-title">Admin</div>
-        <div class="nav-item" onclick="showPage('userManagement')" id="nav-userManagement">
-          <span class="nav-icon">👤</span> User Management
-        </div>
-        <div class="nav-item" onclick="showPage('alerts')" id="nav-alerts">
-          <span class="nav-icon">🔔</span> Alerts
-          <span class="nav-badge" id="alertBadge" style="display:none">0</span>
-        </div>
-      </div>
-    </aside>
+      </aside>
 
-    <main class="main">
+      <main class="main">
 
-      <!-- DASHBOARD -->
-      <div class="page active" id="page-dashboard">
-        <h2 class="page-title">Dashboard</h2>
-        <p class="page-subtitle">Overview of inventory and operations at Sea Rock Inn</p>
-        <div id="lowStockBanner"></div>
-        <div class="stats-grid" id="dashStats"></div>
-        <div class="property-cards" id="propertyCards"></div>
-        <div class="card">
-          <div class="card-title"><span>🕐</span> Recent Activity</div>
-          <div class="table-wrapper">
-            <table>
-              <thead><tr><th>Time</th><th>Action</th><th>Product</th><th>Qty</th><th>User</th></tr></thead>
-              <tbody id="recentActivityTable"><tr><td colspan="5"><div class="empty-state"><p>Loading…</p></div></td></tr></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- ADD PRODUCT -->
-      <div class="page" id="page-addProduct">
-        <h2 class="page-title">Add Product</h2>
-        <p class="page-subtitle">Add stock / products into the central inventory</p>
-        <div class="card">
-          <div class="card-title"><span>📦</span> New Stock Entry</div>
-          <div id="addProductAlert"></div>
-          <div class="form-grid">
-            <div class="form-group-inline">
-              <label class="form-label">Date</label>
-              <input type="date" class="form-input" id="ap_date" />
-            </div>
-            <div class="form-group-inline">
-              <label class="form-label">Product Name</label>
-              <div class="autocomplete-wrapper">
-                <input type="text" class="form-input" id="ap_product" placeholder="Type to search or create…" autocomplete="off"
-                  oninput="handleProductSearch(this.value,'ap_product_list',true)"
-                  onfocus="handleProductSearch(this.value,'ap_product_list',true)"
-                  onblur="setTimeout(()=>document.getElementById('ap_product_list').style.display='none',200)" />
-                <div class="autocomplete-list" id="ap_product_list" style="display:none"></div>
-              </div>
-            </div>
-            <div class="form-group-inline">
-              <label class="form-label">Quantity</label>
-              <input type="number" class="form-input" id="ap_qty" placeholder="0" min="1" inputmode="numeric" />
-            </div>
-          </div>
-          <div style="margin-top:16px" class="btn-group">
-            <button class="btn btn-ocean" id="addProductBtn" onclick="addProduct()">➕ Add to Inventory</button>
-            <button class="btn btn-outline" onclick="clearAddForm()">Clear</button>
-          </div>
-        </div>
-        <div class="card resp-table">
-          <div class="card-title"><span>📋</span> Stock Added History</div>
-          <div class="filter-bar">
-            <div class="form-group-inline" style="min-width:130px">
-              <label class="form-label">From Date</label>
-              <input type="date" class="form-input" id="ah_from" onchange="renderAddHistory()" />
-            </div>
-            <div class="form-group-inline" style="min-width:130px">
-              <label class="form-label">To Date</label>
-              <input type="date" class="form-input" id="ah_to" onchange="renderAddHistory()" />
-            </div>
-            <div class="search-input-wrapper" style="align-self:flex-end">
-              <span class="search-icon">🔍</span>
-              <input type="text" class="form-input" id="ah_search" placeholder="Search product…" oninput="renderAddHistory(this.value)" />
-            </div>
-            <div class="form-group-inline no-print" style="align-self:flex-end">
-              <button class="btn btn-outline btn-sm" onclick="exportAddHistoryExcel()">📊 Excel</button>
-            </div>
-          </div>
-          <div class="table-wrapper">
-            <table>
-              <thead><tr><th>Date</th><th>Product Name</th><th>Qty Added</th><th>Added By</th><th class="no-print">Actions</th></tr></thead>
-              <tbody id="addHistoryTable"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- ISSUE PRODUCT -->
-      <div class="page" id="page-issueProduct">
-        <h2 class="page-title">Issue Product</h2>
-        <p class="page-subtitle">Issue products from central inventory to a property</p>
-        <div class="card">
-          <div class="card-title"><span>🏷️</span> Issue Stock</div>
-          <div id="issueProductAlert"></div>
-          <div class="form-grid">
-            <div class="form-group-inline">
-              <label class="form-label">Date</label>
-              <input type="date" class="form-input" id="ip_date" />
-            </div>
-            <div class="form-group-inline">
-              <label class="form-label">Product Name</label>
-              <div class="autocomplete-wrapper">
-                <input type="text" class="form-input" id="ip_product" placeholder="Select existing product…" autocomplete="off"
-                  oninput="handleProductSearch(this.value,'ip_product_list',false);updateIssueBalance()"
-                  onfocus="handleProductSearch(this.value,'ip_product_list',false)"
-                  onblur="setTimeout(()=>{document.getElementById('ip_product_list').style.display='none';updateIssueBalance()},200)" />
-                <div class="autocomplete-list" id="ip_product_list" style="display:none"></div>
-              </div>
-            </div>
-            <div class="form-group-inline">
-              <label class="form-label">Property</label>
-              <select class="form-input" id="ip_property">
-                <option value="">-- Select Property --</option>
-                <option value="Garbo">Garbo (Hotel Sea Rock Villa)</option>
-                <option value="Odon">Odon (Hotel Tania Sea Rock)</option>
-                <option value="Sheldon">Hotel Sheldon (Sea Rock Villa)</option>
-              </select>
-            </div>
-            <div class="form-group-inline">
-              <label class="form-label">Available Balance</label>
-              <div id="issueBalanceDisplay" style="margin-top:6px">
-                <span class="balance-badge">— Select product</span>
-              </div>
-            </div>
-            <div class="form-group-inline">
-              <label class="form-label">Quantity to Issue</label>
-              <input type="number" class="form-input" id="ip_qty" placeholder="0" min="1" inputmode="numeric" oninput="validateIssueQty()" />
-            </div>
-            <div class="form-group-inline">
-              <label class="form-label">Remark</label>
-              <input type="text" class="form-input" id="ip_remark" list="remark_options" placeholder="Type or select remark..." />
-              <datalist id="remark_options">
-                <option value="Kitchen Requirement"></option>
-                <option value="Housekeeping Requirement"></option>
-                <option value="Restaurant Requirement"></option>
-                <option value="Emergency Purchase"></option>
-                <option value="Event Consumption"></option>
-                <option value="Monthly Function"></option>
-                <option value="Other Remarks"></option>
-              </datalist>
-            </div>
-          </div>
-          <div style="margin-top:16px" class="btn-group">
-            <button class="btn btn-teal" id="issueProductBtn" onclick="issueProduct()">✅ Issue Product</button>
-            <button class="btn btn-outline" onclick="clearIssueForm()">Clear</button>
-          </div>
-        </div>
-        <div class="card resp-table">
-          <div class="card-title"><span>📋</span> Issue History</div>
-          <div class="filter-bar">
-            <div class="form-group-inline" style="min-width:130px">
-              <label class="form-label">From Date</label>
-              <input type="date" class="form-input" id="ih_from" onchange="renderIssueHistory()" />
-            </div>
-            <div class="form-group-inline" style="min-width:130px">
-              <label class="form-label">To Date</label>
-              <input type="date" class="form-input" id="ih_to" onchange="renderIssueHistory()" />
-            </div>
-            <div class="search-input-wrapper" style="align-self:flex-end">
-              <span class="search-icon">🔍</span>
-              <input type="text" class="form-input" id="ih_search" placeholder="Search…" oninput="renderIssueHistory(this.value)" />
-            </div>
-            <div class="form-group-inline no-print" style="align-self:flex-end">
-              <button class="btn btn-outline btn-sm" onclick="exportIssueHistoryExcel()">📊 Excel</button>
-            </div>
-          </div>
-          <div class="table-wrapper">
-            <table>
-              <thead><tr><th>Date</th><th>Product</th><th>Property</th><th>Qty</th><th>Closing Bal.</th><th>Remark</th><th>By</th><th class="no-print">Actions</th></tr></thead>
-              <tbody id="issueHistoryTable"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- STOCK BALANCE -->
-      <div class="page" id="page-stockBalance">
-        <h2 class="page-title">Stock Balance Report</h2>
-        <p class="page-subtitle">Current inventory levels across all products</p>
-        <div class="card resp-table">
-          <div class="filter-bar">
-            <div class="search-input-wrapper">
-              <span class="search-icon">🔍</span>
-              <input type="text" class="form-input" id="sb_search" placeholder="Search product…" oninput="renderStockBalance(this.value)" />
-            </div>
-            <div class="btn-group no-print">
-              <button class="btn btn-outline btn-sm" onclick="exportStockExcel()">📊 Excel</button>
-              <button class="btn btn-outline btn-sm" onclick="exportStockPDF()">📄 PDF</button>
-              <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Print</button>
-            </div>
-          </div>
-          <div class="table-wrapper">
-            <table>
-              <thead><tr><th>#</th><th>Product Name</th><th>Balance Qty</th><th>Status</th></tr></thead>
-              <tbody id="stockBalanceTable"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- ISSUE REPORTS -->
-      <div class="page" id="page-issueReport">
-        <h2 class="page-title">Property-wise Issue Report</h2>
-        <p class="page-subtitle">Filter and view issue records by property and date range</p>
-        <div class="card">
-          <div class="filter-bar">
-            <div class="form-group-inline" style="min-width:130px">
-              <label class="form-label">Date From</label>
-              <input type="date" class="form-input" id="ir_from" />
-            </div>
-            <div class="form-group-inline" style="min-width:130px">
-              <label class="form-label">Date To</label>
-              <input type="date" class="form-input" id="ir_to" />
-            </div>
-            <div class="form-group-inline" style="min-width:180px">
-              <label class="form-label">Property</label>
-              <select class="form-input" id="ir_property" onchange="renderIssueReport()">
-                <option value="">All Properties</option>
-                <option value="Garbo">Garbo</option>
-                <option value="Odon">Odon</option>
-                <option value="Sheldon">Sheldon</option>
-              </select>
-            </div>
-            <div class="form-group-inline" style="min-width:150px">
-              <label class="form-label">Product</label>
-              <div class="autocomplete-wrapper">
-                <input type="text" class="form-input" id="ir_product" placeholder="All Products" autocomplete="off"
-                  oninput="handleProductSearch(this.value,'ir_product_list',false);renderIssueReport()"
-                  onfocus="handleProductSearch(this.value,'ir_product_list',false)"
-                  onblur="setTimeout(()=>document.getElementById('ir_product_list').style.display='none',200)" />
-                <div class="autocomplete-list" id="ir_product_list" style="display:none"></div>
-              </div>
-            </div>
-            <div class="form-group-inline" style="align-self:flex-end">
-              <button class="btn btn-ocean btn-sm" onclick="renderIssueReport()">🔎 Filter</button>
-            </div>
-            <div class="form-group-inline no-print" style="align-self:flex-end">
-              <button class="btn btn-outline btn-sm" onclick="exportIssueExcel()">📊 Excel</button>
-            </div>
-          </div>
-        </div>
-        <div>
-          <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap" class="no-print">
-            <button class="btn btn-outline btn-sm" onclick="setReportTab('all')" id="tab-all" style="background:var(--navy);color:white;border-color:var(--navy)">All</button>
-            <button class="btn btn-outline btn-sm" onclick="setReportTab('Garbo')" id="tab-Garbo">🔵 Garbo</button>
-            <button class="btn btn-outline btn-sm" onclick="setReportTab('Odon')" id="tab-Odon">🟢 Odon</button>
-            <button class="btn btn-outline btn-sm" onclick="setReportTab('Sheldon')" id="tab-Sheldon">🟣 Sheldon</button>
-          </div>
-          <div class="card resp-table" style="padding:0">
+        <!-- DASHBOARD -->
+        <div class="page active" id="page-dashboard">
+          <h2 class="page-title">Dashboard</h2>
+          <p class="page-subtitle">Overview of inventory and operations at Sea Rock Villa</p>
+          <div id="lowStockBanner"></div>
+          <div class="stats-grid" id="dashStats"></div>
+          <div class="property-cards" id="propertyCards"></div>
+          <div class="card">
+            <div class="card-title"><span>🕐</span> Recent Activity</div>
             <div class="table-wrapper">
               <table>
-                <thead><tr><th>Date</th><th>Product</th><th>Property</th><th>Qty</th><th>Closing Bal.</th><th>Remark</th><th>By</th></tr></thead>
-                <tbody id="issueReportTable"></tbody>
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Action</th>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>User</th>
+                  </tr>
+                </thead>
+                <tbody id="recentActivityTable">
+                  <tr>
+                    <td colspan="5">
+                      <div class="empty-state">
+                        <p>Loading…</p>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
               </table>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- AUDIT TRAIL -->
-      <div class="page" id="page-auditTrail">
-        <h2 class="page-title">Audit Trail</h2>
-        <p class="page-subtitle">Complete log of all product and stock transactions</p>
-        <div class="card resp-table">
-          <div class="filter-bar">
-            <div class="search-input-wrapper">
-              <span class="search-icon">🔍</span>
-              <input type="text" class="form-input" placeholder="Search…" oninput="renderAudit(this.value)" />
+        <!-- ADD PRODUCT -->
+        <div class="page" id="page-addProduct">
+          <h2 class="page-title">Add Product</h2>
+          <p class="page-subtitle">Add stock / products into the central inventory</p>
+          <div class="card">
+            <div class="card-title"><span>📦</span> New Stock Entry</div>
+            <div id="addProductAlert"></div>
+            <div class="form-grid">
+              <div class="form-group-inline">
+                <label class="form-label">Product Name</label>
+                <div class="autocomplete-wrapper">
+                  <input type="text" class="form-input" id="ap_product" placeholder="Type to search or create…"
+                    autocomplete="off" oninput="handleProductSearch(this.value,'ap_product_list',true)"
+                    onfocus="handleProductSearch(this.value,'ap_product_list',true)"
+                    onblur="setTimeout(()=>document.getElementById('ap_product_list').style.display='none',200)" />
+                  <div class="autocomplete-list" id="ap_product_list" style="display:none"></div>
+                </div>
+              </div>
+              <div class="form-group-inline">
+                <label class="form-label">Quantity</label>
+                <input type="number" class="form-input" id="ap_qty" placeholder="0" min="1" inputmode="numeric" />
+              </div>
+              <div class="form-group-inline">
+                <label class="form-label">Date</label>
+                <input type="date" class="form-input" id="ap_date" />
+              </div>
+            </div>
+            <div style="margin-top:16px" class="btn-group">
+              <button class="btn btn-ocean" id="addProductBtn" onclick="addProduct()">➕ Add to Inventory</button>
+              <button class="btn btn-outline" onclick="clearAddForm()">Clear</button>
             </div>
           </div>
-          <div class="table-wrapper">
-            <table>
-              <thead><tr><th>Date &amp; Time</th><th>Action</th><th>Product</th><th>Qty</th><th>Property</th><th>Remark</th><th>User</th></tr></thead>
-              <tbody id="auditTable"></tbody>
-            </table>
+          <div class="card resp-table">
+            <div class="card-title"><span>📋</span> Stock Added History</div>
+            <div class="filter-bar">
+              <div class="form-group-inline" style="min-width:130px">
+                <label class="form-label">From Date</label>
+                <input type="date" class="form-input" id="ah_from" onchange="renderAddHistory()" />
+              </div>
+              <div class="form-group-inline" style="min-width:130px">
+                <label class="form-label">To Date</label>
+                <input type="date" class="form-input" id="ah_to" onchange="renderAddHistory()" />
+              </div>
+              <div class="search-input-wrapper" style="align-self:flex-end">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="form-input" id="ah_search" placeholder="Search product…"
+                  oninput="renderAddHistory(this.value)" />
+              </div>
+              <div class="form-group-inline no-print" style="align-self:flex-end">
+                <button class="btn btn-outline btn-sm" onclick="exportAddHistoryExcel()">📊 Excel</button>
+              </div>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Product Name</th>
+                    <th>Qty Added</th>
+                    <th>Added By</th>
+                    <th class="no-print">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="addHistoryTable"></tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- USER MANAGEMENT (Admin only) -->
-      <div class="page" id="page-userManagement">
-        <h2 class="page-title">User Management</h2>
-        <p class="page-subtitle">Add or remove staff and admin accounts</p>
-        <div class="card">
-          <div class="alert alert-info" style="margin-bottom:16px">
-            ℹ️ Users log in with <strong>Email &amp; Password</strong> via Firebase Authentication.
-            A password reset email can be sent from Firebase Console if needed.
+        <!-- ISSUE PRODUCT -->
+        <div class="page" id="page-issueProduct">
+          <h2 class="page-title">Issue Product</h2>
+          <p class="page-subtitle">Issue products from central inventory to a property</p>
+          <div class="card">
+            <div class="card-title"><span>🏷️</span> Issue Stock</div>
+            <div id="issueProductAlert"></div>
+            <div class="form-grid">
+              <div class="form-group-inline">
+                <label class="form-label">Product Name</label>
+                <div class="autocomplete-wrapper">
+                  <input type="text" class="form-input" id="ip_product" placeholder="Select existing product…"
+                    autocomplete="off"
+                    oninput="handleProductSearch(this.value,'ip_product_list',false);updateIssueBalance()"
+                    onfocus="handleProductSearch(this.value,'ip_product_list',false)"
+                    onblur="setTimeout(()=>{document.getElementById('ip_product_list').style.display='none';updateIssueBalance()},200)" />
+                  <div class="autocomplete-list" id="ip_product_list" style="display:none"></div>
+                </div>
+              </div>
+              <div class="form-group-inline">
+                <label class="form-label">Property</label>
+                <select class="form-input" id="ip_property">
+                  <option value="">-- Select Property --</option>
+                  <option value="Garbo">Garbo (Hotel Sea Rock Villa)</option>
+                  <option value="Odon">Odon (Hotel Tania Sea Rock)</option>
+                  <option value="Sheldon">Hotel Sheldon (Sea Rock Villa)</option>
+                </select>
+              </div>
+              <div class="form-group-inline">
+                <label class="form-label">Available Balance</label>
+                <div id="issueBalanceDisplay" style="margin-top:6px">
+                  <span class="balance-badge">— Select product</span>
+                </div>
+              </div>
+              <div class="form-group-inline">
+                <label class="form-label">Quantity to Issue</label>
+                <input type="number" class="form-input" id="ip_qty" placeholder="0" min="1" inputmode="numeric"
+                  oninput="validateIssueQty()" />
+              </div>
+              <div class="form-group-inline">
+                <label class="form-label">Remark</label>
+                <input type="text" class="form-input" id="ip_remark" list="remark_options"
+                  placeholder="Type or select remark..." />
+                <datalist id="remark_options">
+                  <option value="Kitchen Requirement"></option>
+                  <option value="Housekeeping Requirement"></option>
+                  <option value="Restaurant Requirement"></option>
+                  <option value="Emergency Purchase"></option>
+                  <option value="Event Consumption"></option>
+                  <option value="Monthly Function"></option>
+                  <option value="Other Remarks"></option>
+                </datalist>
+              </div>
+              <div class="form-group-inline">
+                <label class="form-label">Date</label>
+                <input type="date" class="form-input" id="ip_date" />
+              </div>
+            </div>
+            <div style="margin-top:16px" class="btn-group">
+              <button class="btn btn-teal" id="issueProductBtn" onclick="issueProduct()">✅ Issue Product</button>
+              <button class="btn btn-outline" onclick="clearIssueForm()">Clear</button>
+            </div>
           </div>
-          <div class="card-title"><span>➕</span> Add New User</div>
-          <div id="userAlert"></div>
-          <div class="form-grid">
-            <div class="form-group-inline">
-              <label class="form-label">Full Name</label>
-              <input type="text" class="form-input" id="nu_name" placeholder="e.g. Rahul Sharma" />
+          <div class="card resp-table">
+            <div class="card-title"><span>📋</span> Issue History</div>
+            <div class="filter-bar">
+              <div class="form-group-inline" style="min-width:130px">
+                <label class="form-label">From Date</label>
+                <input type="date" class="form-input" id="ih_from" onchange="renderIssueHistory()" />
+              </div>
+              <div class="form-group-inline" style="min-width:130px">
+                <label class="form-label">To Date</label>
+                <input type="date" class="form-input" id="ih_to" onchange="renderIssueHistory()" />
+              </div>
+              <div class="search-input-wrapper" style="align-self:flex-end">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="form-input" id="ih_search" placeholder="Search…"
+                  oninput="renderIssueHistory(this.value)" />
+              </div>
+              <div class="form-group-inline no-print" style="align-self:flex-end">
+                <button class="btn btn-outline btn-sm" onclick="exportIssueHistoryExcel()">📊 Excel</button>
+              </div>
             </div>
-            <div class="form-group-inline">
-              <label class="form-label">Email Address</label>
-              <input type="email" class="form-input" id="nu_email" placeholder="user@searockinn.com" inputmode="email" />
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Product</th>
+                    <th>Property</th>
+                    <th>Qty</th>
+                    <th>Closing Bal.</th>
+                    <th>Remark</th>
+                    <th>By</th>
+                    <th class="no-print">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="issueHistoryTable"></tbody>
+              </table>
             </div>
-            <div class="form-group-inline">
-              <label class="form-label">Password</label>
-              <input type="password" class="form-input" id="nu_pass" placeholder="Min 6 characters" />
-            </div>
-            <div class="form-group-inline">
-              <label class="form-label">Role</label>
-              <select class="form-input" id="nu_role">
-                <option value="staff">Staff</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-          </div>
-          <div style="margin-top:16px">
-            <button class="btn btn-ocean" id="addUserBtn" onclick="addUser()">➕ Create User</button>
           </div>
         </div>
-        <div class="card">
-          <div class="card-title"><span>👥</span> All Users</div>
-          <div class="table-wrapper">
-            <table>
-              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Action</th></tr></thead>
-              <tbody id="userTable"></tbody>
-            </table>
+
+        <!-- STOCK BALANCE -->
+        <div class="page" id="page-stockBalance">
+          <h2 class="page-title">Stock Balance Report</h2>
+          <p class="page-subtitle">Current inventory levels across all products</p>
+          <div class="card resp-table">
+            <div class="filter-bar">
+              <div class="search-input-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="form-input" id="sb_search" placeholder="Search product…"
+                  oninput="renderStockBalance(this.value)" />
+              </div>
+              <div class="btn-group no-print">
+                <button class="btn btn-outline btn-sm" onclick="exportStockExcel()">📊 Excel</button>
+                <button class="btn btn-outline btn-sm" onclick="exportStockPDF()">📄 PDF</button>
+                <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Print</button>
+              </div>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Product Name</th>
+                    <th>Balance Qty</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="stockBalanceTable"></tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- ALERTS -->
-      <div class="page" id="page-alerts">
-        <h2 class="page-title">Stock Alerts</h2>
-        <p class="page-subtitle">Low stock and out of stock notifications</p>
-        <div id="alertsContent"></div>
-      </div>
+        <!-- ISSUE REPORTS -->
+        <div class="page" id="page-issueReport">
+          <h2 class="page-title">Property-wise Issue Report</h2>
+          <p class="page-subtitle">Filter and view issue records by property and date range</p>
+          <div class="card">
+            <div class="filter-bar">
+              <div class="form-group-inline" style="min-width:130px">
+                <label class="form-label">Date From</label>
+                <input type="date" class="form-input" id="ir_from" />
+              </div>
+              <div class="form-group-inline" style="min-width:130px">
+                <label class="form-label">Date To</label>
+                <input type="date" class="form-input" id="ir_to" />
+              </div>
+              <div class="form-group-inline" style="min-width:180px">
+                <label class="form-label">Property</label>
+                <select class="form-input" id="ir_property" onchange="renderIssueReport()">
+                  <option value="">All Properties</option>
+                  <option value="Garbo">Garbo</option>
+                  <option value="Odon">Odon</option>
+                  <option value="Sheldon">Sheldon</option>
+                </select>
+              </div>
+              <div class="form-group-inline" style="min-width:150px">
+                <label class="form-label">Product</label>
+                <div class="autocomplete-wrapper">
+                  <input type="text" class="form-input" id="ir_product" placeholder="All Products" autocomplete="off"
+                    oninput="handleProductSearch(this.value,'ir_product_list',false);renderIssueReport()"
+                    onfocus="handleProductSearch(this.value,'ir_product_list',false)"
+                    onblur="setTimeout(()=>document.getElementById('ir_product_list').style.display='none',200)" />
+                  <div class="autocomplete-list" id="ir_product_list" style="display:none"></div>
+                </div>
+              </div>
+              <div class="form-group-inline" style="align-self:flex-end">
+                <button class="btn btn-ocean btn-sm" onclick="renderIssueReport()">🔎 Filter</button>
+              </div>
+              <div class="form-group-inline no-print" style="align-self:flex-end">
+                <button class="btn btn-outline btn-sm" onclick="exportIssueExcel()">📊 Excel</button>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap" class="no-print">
+              <button class="btn btn-outline btn-sm" onclick="setReportTab('all')" id="tab-all"
+                style="background:var(--navy);color:white;border-color:var(--navy)">All</button>
+              <button class="btn btn-outline btn-sm" onclick="setReportTab('Garbo')" id="tab-Garbo">🔵 Garbo</button>
+              <button class="btn btn-outline btn-sm" onclick="setReportTab('Odon')" id="tab-Odon">🟢 Odon</button>
+              <button class="btn btn-outline btn-sm" onclick="setReportTab('Sheldon')" id="tab-Sheldon">🟣
+                Sheldon</button>
+            </div>
+            <div class="card resp-table" style="padding:0">
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Product</th>
+                      <th>Property</th>
+                      <th>Qty</th>
+                      <th>Closing Bal.</th>
+                      <th>Remark</th>
+                      <th>By</th>
+                    </tr>
+                  </thead>
+                  <tbody id="issueReportTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
 
-    </main>
+        <!-- AUDIT TRAIL -->
+        <div class="page" id="page-auditTrail">
+          <h2 class="page-title">Audit Trail</h2>
+          <p class="page-subtitle">Complete log of all product and stock transactions</p>
+          <div class="card resp-table">
+            <div class="filter-bar">
+              <div class="search-input-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="form-input" placeholder="Search…" oninput="renderAudit(this.value)" />
+              </div>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date &amp; Time</th>
+                    <th>Action</th>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>Property</th>
+                    <th>Remark</th>
+                    <th>User</th>
+                  </tr>
+                </thead>
+                <tbody id="auditTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- USER MANAGEMENT (Admin only) -->
+        <div class="page" id="page-userManagement">
+          <h2 class="page-title">User Management</h2>
+          <p class="page-subtitle">Add or remove staff and admin accounts</p>
+          <div class="card">
+            <div class="alert alert-info" style="margin-bottom:16px">
+              ℹ️ Users log in with <strong>Email &amp; Password</strong> via Firebase Authentication.
+              A password reset email can be sent from Firebase Console if needed.
+            </div>
+            <div class="card-title"><span>➕</span> Add New User</div>
+            <div id="userAlert"></div>
+            <div class="form-grid">
+              <div class="form-group-inline">
+                <label class="form-label">Full Name</label>
+                <input type="text" class="form-input" id="nu_name" placeholder="e.g. Rahul Sharma" />
+              </div>
+              <div class="form-group-inline">
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-input" id="nu_email" placeholder="user@searockinn.com"
+                  inputmode="email" />
+              </div>
+              <div class="form-group-inline">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-input" id="nu_pass" placeholder="Min 6 characters" />
+              </div>
+              <div class="form-group-inline">
+                <label class="form-label">Role</label>
+                <select class="form-input" id="nu_role">
+                  <option value="staff">Staff</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-top:16px">
+              <button class="btn btn-ocean" id="addUserBtn" onclick="addUser()">➕ Create User</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title"><span>👥</span> All Users</div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="userTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ALERTS -->
+        <div class="page" id="page-alerts">
+          <h2 class="page-title">Stock Alerts</h2>
+          <p class="page-subtitle">Low stock and out of stock notifications</p>
+          <div id="alertsContent"></div>
+        </div>
+
+      </main>
+    </div>
   </div>
-</div>
 
-<!-- TOAST -->
-<div id="toast"></div>
+  <!-- TOAST -->
+  <div id="toast"></div>
 
-<script>
-// =====================================================================
-//  IMPORTANT: db, auth, secondaryAuth are declared in firebase-config.js
-//  This file contains NO API keys. All Firebase references come from
-//  firebase-config.js which is loaded BEFORE this script.
-// =====================================================================
+  <script>
+    // =====================================================================
+    //  IMPORTANT: db, auth, secondaryAuth are declared in firebase-config.js
+    //  This file contains NO API keys. All Firebase references come from
+    //  firebase-config.js which is loaded BEFORE this script.
+    // =====================================================================
 
-// ── Guard: ensure firebase-config.js actually loaded ─────────────────
-if (typeof firebase === 'undefined' || typeof db === 'undefined' || typeof auth === 'undefined') {
-  // firebase-config.js failed to load (wrong path, browser block, etc.)
-  window.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('loadingOverlay').style.display = 'none';
-    document.getElementById('loginScreen').classList.add('show');
-    document.getElementById('loginAlert').innerHTML =
-      '<div class="alert alert-error">❌ <strong>firebase-config.js not found.</strong><br>'
-    + 'Make sure <code>firebase-config.js</code> and this HTML file are '
-    + 'in the <strong>same folder</strong>, then refresh.</div>';
-  });
-  // Stop executing the rest of this script
-  throw new Error('firebase-config.js did not load — stopping app init.');
-}
+    // ── Guard: ensure firebase-config.js actually loaded ─────────────────
+    if (typeof firebase === 'undefined' || typeof db === 'undefined' || typeof auth === 'undefined') {
+      // firebase-config.js failed to load (wrong path, browser block, etc.)
+      window.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        document.getElementById('loginScreen').classList.add('show');
+        document.getElementById('loginAlert').innerHTML =
+          '<div class="alert alert-error">❌ <strong>firebase-config.js not found.</strong><br>'
+          + 'Make sure <code>firebase-config.js</code> and this HTML file are '
+          + 'in the <strong>same folder</strong>, then refresh.</div>';
+      });
+      // Stop executing the rest of this script
+      throw new Error('firebase-config.js did not load — stopping app init.');
+    }
 
-// ── In-memory cache (populated from Firestore after login) ───────────
-let cache = {
-  stock: {},       // { productName: qty }
-  addHistory: [],  // [{ id, date, product, qty, user, timestamp }]
-  issues: [],      // [{ id, date, product, property, qty, closingBalance, remark, user, timestamp }]
-  audit: [],       // [{ id, datetime, action, product, qty, property, remark, user, timestamp }]
-  users: []        // [{ id, email, name, role }]  — from userProfiles collection
-};
+    // ── In-memory cache (populated from Firestore after login) ───────────
+    let cache = {
+      stock: {},       // { productName: qty }
+      addHistory: [],  // [{ id, date, product, qty, user, timestamp }]
+      issues: [],      // [{ id, date, product, property, qty, closingBalance, remark, user, timestamp }]
+      audit: [],       // [{ id, datetime, action, product, qty, property, remark, user, timestamp }]
+      users: []        // [{ id, email, name, role }]  — from userProfiles collection
+    };
 
-let currentUser = null;  // { uid, email, name, role }
+    let currentUser = null;  // { uid, email, name, role }
 
-// ── Auth State Observer ──────────────────────────────────────────────
-// Firebase fires this automatically on page load AND on sign-in / sign-out.
-auth.onAuthStateChanged(async (firebaseUser) => {
-  if (firebaseUser) {
-    showLoading(true);
-    try {
-      const profile = await getProfile(firebaseUser.uid);
-      if (!profile) {
-        await auth.signOut();
+    // ── Auth State Observer ──────────────────────────────────────────────
+    // Firebase fires this automatically on page load AND on sign-in / sign-out.
+    auth.onAuthStateChanged(async (firebaseUser) => {
+      if (firebaseUser) {
+        showLoading(true);
+        try {
+          const profile = await getProfile(firebaseUser.uid);
+          if (!profile) {
+            await auth.signOut();
+            showLoading(false);
+            showLogin();
+            showError('Account profile not found in database. Ask your admin to add your profile in Firestore → userProfiles.');
+            return;
+          }
+          currentUser = { uid: firebaseUser.uid, email: firebaseUser.email, ...profile };
+          await loadAllData();
+          showApp();
+        } catch (e) {
+          console.error('onAuthStateChanged error:', e);
+          showLoading(false);
+          showLogin();
+          const hint = e.code === 'permission-denied'
+            ? 'Firestore rules are blocking access. Go to Firebase Console → Firestore → Rules and allow authenticated reads/writes.'
+            : `Firebase error: ${e.code || e.message}`;
+          showError(hint);
+        }
+      } else {
         showLoading(false);
         showLogin();
-        showError('Account profile not found in database. Ask your admin to add your profile in Firestore → userProfiles.');
+      }
+    });
+
+    // ── Login ─────────────────────────────────────────────────────────────
+    async function doLogin() {
+      const email = document.getElementById('loginEmail').value.trim();
+      const pass = document.getElementById('loginPass').value;
+      const btn = document.getElementById('loginBtn');
+      const alertEl = document.getElementById('loginAlert');
+
+      alertEl.innerHTML = '';
+      if (!email || !pass) {
+        alertEl.innerHTML = '<div class="alert alert-error">❌ Please enter your email and password.</div>';
         return;
       }
-      currentUser = { uid: firebaseUser.uid, email: firebaseUser.email, ...profile };
-      await loadAllData();
-      showApp();
-    } catch (e) {
-      console.error('onAuthStateChanged error:', e);
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="inline-spinner"></span> Signing in…';
+
+      try {
+        // Firebase Auth (Email/Password) — does not require Firestore, works from file://
+        await auth.signInWithEmailAndPassword(email, pass);
+        // onAuthStateChanged fires automatically → profile fetch + data load happens there
+      } catch (err) {
+        console.error('Login error code:', err.code, '| message:', err.message);
+        let msg;
+        switch (err.code) {
+          case 'auth/user-not-found':
+          case 'auth/wrong-password':
+          case 'auth/invalid-credential':
+          case 'auth/invalid-login-credentials':
+            msg = '❌ Wrong email or password. Check your credentials and try again.'; break;
+          case 'auth/invalid-email':
+            msg = '❌ Please enter a valid email address (e.g. you@searockinn.com).'; break;
+          case 'auth/user-disabled':
+            msg = '❌ This account has been disabled. Contact your admin.'; break;
+          case 'auth/too-many-requests':
+            msg = '❌ Too many failed attempts. Please wait a few minutes and try again.'; break;
+          case 'auth/network-request-failed':
+            msg = '❌ Cannot reach Firebase servers. Check your internet connection.'; break;
+          case 'auth/operation-not-allowed':
+            msg = '❌ Email/Password sign-in is not enabled. Enable it in Firebase Console → Authentication → Sign-in method.'; break;
+          default:
+            msg = `❌ Sign-in failed (${err.code}). Check browser console for details.`;
+        }
+        alertEl.innerHTML = `<div class="alert alert-error">${msg}</div>`;
+        btn.disabled = false;
+        btn.innerHTML = 'Sign In →';
+      }
+    }
+
+    async function doLogout() {
+      try {
+        await auth.signOut();
+        // onAuthStateChanged fires → showLogin() called automatically
+        cache = { stock: {}, addHistory: [], issues: [], audit: [], users: [] };
+        currentUser = null;
+        closeSidebar();
+      } catch (e) { console.error(e); }
+    }
+
+    // ── Firestore: Load all data ─────────────────────────────────────────
+    async function loadAllData() {
+      try {
+        const [stockDoc, addSnap, issueSnap, auditSnap, usersSnap] = await Promise.all([
+          db.collection('config').doc('stock').get(),
+          db.collection('addHistory').orderBy('timestamp', 'desc').get(),
+          db.collection('issues').orderBy('timestamp', 'desc').get(),
+          db.collection('audit').orderBy('timestamp', 'desc').get(),
+          db.collection('userProfiles').get()
+        ]);
+        cache.stock = stockDoc.exists ? stockDoc.data() : {};
+        cache.addHistory = addSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        cache.issues = issueSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        cache.audit = auditSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        cache.users = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      } catch (err) {
+        console.error('Firestore load error — code:', err.code, '| message:', err.message);
+        // Distinguish error types so the user knows exactly what to fix
+        if (err.code === 'permission-denied') {
+          // This is NOT a network error — it's Firestore Security Rules blocking access
+          throw Object.assign(err, { _handled: true });
+          // Re-throw so onAuthStateChanged catch block shows the rules guidance
+        } else if (err.code === 'unavailable') {
+          toast('❌ Firebase is temporarily unavailable. Check your internet and try refreshing.', 'error');
+        } else if (err.code === 'failed-precondition') {
+          toast('⚠️ Firestore index not ready yet. Queries may take a moment to work — wait a few seconds and refresh.', 'warning');
+        } else {
+          toast(`❌ Data load failed (${err.code || 'unknown'}). Open browser console (F12) for details.`, 'error');
+        }
+      }
+    }
+
+    async function getProfile(uid) {
+      try {
+        const doc = await db.collection('userProfiles').doc(uid).get();
+        return doc.exists ? doc.data() : null;
+      } catch (err) {
+        console.error('getProfile error:', err.code, err.message);
+        throw err; // propagate so onAuthStateChanged catch block handles it
+      }
+    }
+
+    // ── UI helpers ────────────────────────────────────────────────────────
+    function showLoading(show) {
+      document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+    }
+    function showLogin() {
+      document.getElementById('loginScreen').classList.add('show');
+      document.getElementById('app').classList.remove('show');
+    }
+    function showError(msg) {
+      document.getElementById('loginAlert').innerHTML = `<div class="alert alert-error">❌ ${msg}</div>`;
+    }
+    function showApp() {
       showLoading(false);
-      showLogin();
-      const hint = e.code === 'permission-denied'
-        ? 'Firestore rules are blocking access. Go to Firebase Console → Firestore → Rules and allow authenticated reads/writes.'
-        : `Firebase error: ${e.code || e.message}`;
-      showError(hint);
+      document.getElementById('loginScreen').classList.remove('show');
+      document.getElementById('app').classList.add('show');
+      document.getElementById('headerUserName').textContent = currentUser.name || currentUser.email;
+      document.getElementById('headerUserRole').textContent = currentUser.role === 'admin' ? 'Administrator' : 'Staff';
+      document.getElementById('userAvatar').textContent = (currentUser.name || currentUser.email)[0].toUpperCase();
+      document.getElementById('adminOnlyNav').style.display = currentUser.role === 'admin' ? 'block' : 'none';
+
+      // Staff restrictions: hide Add Product and Issue Product buttons from sidebar
+      const isStaff = currentUser.role === 'staff';
+      document.getElementById('nav-addProduct').style.display = isStaff ? 'none' : 'flex';
+      document.getElementById('nav-issueProduct').style.display = isStaff ? 'none' : 'flex';
+
+      setDefaultDates();
+      renderAll();
+      showPage('dashboard');
     }
-  } else {
-    showLoading(false);
-    showLogin();
-  }
-});
 
-// ── Login ─────────────────────────────────────────────────────────────
-async function doLogin() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const pass  = document.getElementById('loginPass').value;
-  const btn   = document.getElementById('loginBtn');
-  const alertEl = document.getElementById('loginAlert');
-
-  alertEl.innerHTML = '';
-  if (!email || !pass) {
-    alertEl.innerHTML = '<div class="alert alert-error">❌ Please enter your email and password.</div>';
-    return;
-  }
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="inline-spinner"></span> Signing in…';
-
-  try {
-    // Firebase Auth (Email/Password) — does not require Firestore, works from file://
-    await auth.signInWithEmailAndPassword(email, pass);
-    // onAuthStateChanged fires automatically → profile fetch + data load happens there
-  } catch (err) {
-    console.error('Login error code:', err.code, '| message:', err.message);
-    let msg;
-    switch (err.code) {
-      case 'auth/user-not-found':
-      case 'auth/wrong-password':
-      case 'auth/invalid-credential':
-      case 'auth/invalid-login-credentials':
-        msg = '❌ Wrong email or password. Check your credentials and try again.'; break;
-      case 'auth/invalid-email':
-        msg = '❌ Please enter a valid email address (e.g. you@searockinn.com).'; break;
-      case 'auth/user-disabled':
-        msg = '❌ This account has been disabled. Contact your admin.'; break;
-      case 'auth/too-many-requests':
-        msg = '❌ Too many failed attempts. Please wait a few minutes and try again.'; break;
-      case 'auth/network-request-failed':
-        msg = '❌ Cannot reach Firebase servers. Check your internet connection.'; break;
-      case 'auth/operation-not-allowed':
-        msg = '❌ Email/Password sign-in is not enabled. Enable it in Firebase Console → Authentication → Sign-in method.'; break;
-      default:
-        msg = `❌ Sign-in failed (${err.code}). Check browser console for details.`;
+    // ── Mobile Sidebar ────────────────────────────────────────────────────
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('sidebarOverlay').classList.toggle('open');
     }
-    alertEl.innerHTML = `<div class="alert alert-error">${msg}</div>`;
-    btn.disabled = false;
-    btn.innerHTML = 'Sign In →';
-  }
-}
-
-async function doLogout() {
-  try {
-    await auth.signOut();
-    // onAuthStateChanged fires → showLogin() called automatically
-    cache = { stock: {}, addHistory: [], issues: [], audit: [], users: [] };
-    currentUser = null;
-    closeSidebar();
-  } catch (e) { console.error(e); }
-}
-
-// ── Firestore: Load all data ─────────────────────────────────────────
-async function loadAllData() {
-  try {
-    const [stockDoc, addSnap, issueSnap, auditSnap, usersSnap] = await Promise.all([
-      db.collection('config').doc('stock').get(),
-      db.collection('addHistory').orderBy('timestamp', 'desc').get(),
-      db.collection('issues').orderBy('timestamp', 'desc').get(),
-      db.collection('audit').orderBy('timestamp', 'desc').get(),
-      db.collection('userProfiles').get()
-    ]);
-    cache.stock      = stockDoc.exists ? stockDoc.data() : {};
-    cache.addHistory = addSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    cache.issues     = issueSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    cache.audit      = auditSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    cache.users      = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-  } catch (err) {
-    console.error('Firestore load error — code:', err.code, '| message:', err.message);
-    // Distinguish error types so the user knows exactly what to fix
-    if (err.code === 'permission-denied') {
-      // This is NOT a network error — it's Firestore Security Rules blocking access
-      throw Object.assign(err, { _handled: true });
-      // Re-throw so onAuthStateChanged catch block shows the rules guidance
-    } else if (err.code === 'unavailable') {
-      toast('❌ Firebase is temporarily unavailable. Check your internet and try refreshing.', 'error');
-    } else if (err.code === 'failed-precondition') {
-      toast('⚠️ Firestore index not ready yet. Queries may take a moment to work — wait a few seconds and refresh.', 'warning');
-    } else {
-      toast(`❌ Data load failed (${err.code || 'unknown'}). Open browser console (F12) for details.`, 'error');
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebarOverlay').classList.remove('open');
     }
-  }
-}
 
-async function getProfile(uid) {
-  try {
-    const doc = await db.collection('userProfiles').doc(uid).get();
-    return doc.exists ? doc.data() : null;
-  } catch (err) {
-    console.error('getProfile error:', err.code, err.message);
-    throw err; // propagate so onAuthStateChanged catch block handles it
-  }
-}
+    // ── Navigation ────────────────────────────────────────────────────────
+    let currentPage = 'dashboard';
+    let reportTab = 'all';
 
-// ── UI helpers ────────────────────────────────────────────────────────
-function showLoading(show) {
-  document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
-}
-function showLogin() {
-  document.getElementById('loginScreen').classList.add('show');
-  document.getElementById('app').classList.remove('show');
-}
-function showError(msg) {
-  document.getElementById('loginAlert').innerHTML = `<div class="alert alert-error">❌ ${msg}</div>`;
-}
-function showApp() {
-  showLoading(false);
-  document.getElementById('loginScreen').classList.remove('show');
-  document.getElementById('app').classList.add('show');
-  document.getElementById('headerUserName').textContent = currentUser.name || currentUser.email;
-  document.getElementById('headerUserRole').textContent = currentUser.role === 'admin' ? 'Administrator' : 'Staff';
-  document.getElementById('userAvatar').textContent = (currentUser.name || currentUser.email)[0].toUpperCase();
-  document.getElementById('adminOnlyNav').style.display = currentUser.role === 'admin' ? 'block' : 'none';
-  
-  // Staff restrictions: hide Add Product and Issue Product buttons from sidebar
-  const isStaff = currentUser.role === 'staff';
-  document.getElementById('nav-addProduct').style.display = isStaff ? 'none' : 'flex';
-  document.getElementById('nav-issueProduct').style.display = isStaff ? 'none' : 'flex';
-  
-  setDefaultDates();
-  renderAll();
-  showPage('dashboard');
-}
+    function showPage(page) {
+      // Staff cannot access addProduct or issueProduct pages directly
+      if ((page === 'addProduct' || page === 'issueProduct') && currentUser && currentUser.role === 'staff') {
+        showPage('dashboard');
+        toast('❌ Access denied: Staff cannot add or issue products.', 'error');
+        return;
+      }
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('page-' + page)?.classList.add('active');
+      document.getElementById('nav-' + page)?.classList.add('active');
+      currentPage = page;
+      closeSidebar();
+      if (page === 'dashboard') renderDashboard();
+      if (page === 'stockBalance') renderStockBalance('');
+      if (page === 'issueReport') renderIssueReport();
+      if (page === 'auditTrail') renderAudit('');
+      if (page === 'addProduct') renderAddHistory('');
+      if (page === 'issueProduct') renderIssueHistory('');
+      if (page === 'userManagement') renderUsers();
+      if (page === 'alerts') renderAlerts();
+    }
 
-// ── Mobile Sidebar ────────────────────────────────────────────────────
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sidebarOverlay').classList.toggle('open');
-}
-function closeSidebar() {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('sidebarOverlay').classList.remove('open');
-}
+    // ── Dates ─────────────────────────────────────────────────────────────
+    function setDefaultDates() {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const todayLocal = `${yyyy}-${mm}-${dd}`;
+      ['ap_date', 'ip_date'].forEach(id => { const el = document.getElementById(id); if (el) el.value = todayLocal; });
+    }
 
-// ── Navigation ────────────────────────────────────────────────────────
-let currentPage = 'dashboard';
-let reportTab   = 'all';
+    // ── Autocomplete ──────────────────────────────────────────────────────
+    function getAllProducts() { return Object.keys(cache.stock); }
 
-function showPage(page) {
-  // Staff cannot access addProduct or issueProduct pages directly
-  if ((page === 'addProduct' || page === 'issueProduct') && currentUser && currentUser.role === 'staff') {
-    showPage('dashboard');
-    toast('❌ Access denied: Staff cannot add or issue products.', 'error');
-    return;
-  }
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-'+page)?.classList.add('active');
-  document.getElementById('nav-'+page)?.classList.add('active');
-  currentPage = page;
-  closeSidebar();
-  if (page==='dashboard')      renderDashboard();
-  if (page==='stockBalance')   renderStockBalance('');
-  if (page==='issueReport')    renderIssueReport();
-  if (page==='auditTrail')     renderAudit('');
-  if (page==='addProduct')     renderAddHistory('');
-  if (page==='issueProduct')   renderIssueHistory('');
-  if (page==='userManagement') renderUsers();
-  if (page==='alerts')         renderAlerts();
-}
-
-// ── Dates ─────────────────────────────────────────────────────────────
-function setDefaultDates() {
-  const today = new Date().toISOString().split('T')[0];
-  ['ap_date','ip_date'].forEach(id => { const el=document.getElementById(id); if(el) el.value=today; });
-}
-
-// ── Autocomplete ──────────────────────────────────────────────────────
-function getAllProducts() { return Object.keys(cache.stock); }
-
-function handleProductSearch(val, listId, allowNew) {
-  const list = document.getElementById(listId);
-  const products = getAllProducts();
-  const q = val.trim().toLowerCase();
-  const matches = products.filter(p => p.toLowerCase().includes(q));
-  if (!q && matches.length===0) { list.style.display='none'; return; }
-  let html = '';
-  matches.forEach(p => {
-    const qty = cache.stock[p] || 0;
-    html += `<div class="autocomplete-item" onmousedown="selectProduct('${p.replace(/'/g,"\\'")}','${listId.replace('_list','')}')">`
+    function handleProductSearch(val, listId, allowNew) {
+      const list = document.getElementById(listId);
+      const products = getAllProducts();
+      const q = val.trim().toLowerCase();
+      const matches = products.filter(p => p.toLowerCase().includes(q));
+      if (!q && matches.length === 0) { list.style.display = 'none'; return; }
+      let html = '';
+      matches.forEach(p => {
+        const qty = cache.stock[p] || 0;
+        html += `<div class="autocomplete-item" onmousedown="selectProduct('${p.replace(/'/g, "\\'")}','${listId.replace('_list', '')}')">`
           + `📦 <span>${p}</span><span style="margin-left:auto;font-size:11px;color:var(--text-muted)">Qty: ${qty}</span></div>`;
-  });
-  if (allowNew && val.trim() && !products.map(p=>p.toLowerCase()).includes(val.trim().toLowerCase())) {
-    if (matches.length>0) html += '<div class="autocomplete-divider"></div>';
-    html += `<div class="autocomplete-item new-product" onmousedown="selectProduct('${val.trim().replace(/'/g,"\\'")}','${listId.replace('_list','')}')">`
+      });
+      if (allowNew && val.trim() && !products.map(p => p.toLowerCase()).includes(val.trim().toLowerCase())) {
+        if (matches.length > 0) html += '<div class="autocomplete-divider"></div>';
+        html += `<div class="autocomplete-item new-product" onmousedown="selectProduct('${val.trim().replace(/'/g, "\\'")}','${listId.replace('_list', '')}')">`
           + `✨ Create new: "${val.trim()}"</div>`;
-  }
-  list.innerHTML = html;
-  list.style.display = html ? 'block' : 'none';
-}
+      }
+      list.innerHTML = html;
+      list.style.display = html ? 'block' : 'none';
+    }
 
-function selectProduct(name, inputId) {
-  const input = document.getElementById(inputId);
-  if (input) {
-    input.value = name;
-    const listEl = document.getElementById(inputId+'_list');
-    if (listEl) listEl.style.display = 'none';
-    if (inputId==='ip_product') updateIssueBalance();
-  }
-}
+    function selectProduct(name, inputId) {
+      const input = document.getElementById(inputId);
+      if (input) {
+        input.value = name;
+        const listEl = document.getElementById(inputId + '_list');
+        if (listEl) listEl.style.display = 'none';
+        if (inputId === 'ip_product') updateIssueBalance();
+      }
+    }
 
-// ── Stock helpers ─────────────────────────────────────────────────────
-function getBalance(product) { return cache.stock[product] || 0; }
+    // ── Stock helpers ─────────────────────────────────────────────────────
+    function getBalance(product) { return cache.stock[product] || 0; }
 
-function updateIssueBalance() {
-  const product = document.getElementById('ip_product')?.value.trim();
-  const display = document.getElementById('issueBalanceDisplay');
-  if (!display) return;
-  if (!product || !getAllProducts().includes(product)) {
-    display.innerHTML = '<span class="balance-badge">— Select product</span>'; return;
-  }
-  const bal = getBalance(product);
-  const cls = bal<=0?'empty':bal<=10?'low':'';
-  display.innerHTML = `<span class="balance-badge ${cls}">${bal<=0?'⛔':bal<=10?'⚠️':'✅'} ${bal} units available</span>`;
-}
+    function updateIssueBalance() {
+      const product = document.getElementById('ip_product')?.value.trim();
+      const display = document.getElementById('issueBalanceDisplay');
+      if (!display) return;
+      if (!product || !getAllProducts().includes(product)) {
+        display.innerHTML = '<span class="balance-badge">— Select product</span>'; return;
+      }
+      const bal = getBalance(product);
+      const cls = bal <= 0 ? 'empty' : bal <= 10 ? 'low' : '';
+      display.innerHTML = `<span class="balance-badge ${cls}">${bal <= 0 ? '⛔' : bal <= 10 ? '⚠️' : '✅'} ${bal} units available</span>`;
+    }
 
-function validateIssueQty() {
-  const product = document.getElementById('ip_product')?.value.trim();
-  const qty = parseInt(document.getElementById('ip_qty')?.value)||0;
-  const bal = getBalance(product);
-  const alertEl = document.getElementById('issueProductAlert');
-  if (qty>bal && bal>0) alertEl.innerHTML = `<div class="alert alert-warning">⚠️ Requested (${qty}) exceeds stock (${bal}).</div>`;
-  else alertEl.innerHTML = '';
-}
+    function validateIssueQty() {
+      const product = document.getElementById('ip_product')?.value.trim();
+      const qty = parseInt(document.getElementById('ip_qty')?.value) || 0;
+      const bal = getBalance(product);
+      const alertEl = document.getElementById('issueProductAlert');
+      if (qty > bal && bal > 0) alertEl.innerHTML = `<div class="alert alert-warning">⚠️ Requested (${qty}) exceeds stock (${bal}).</div>`;
+      else alertEl.innerHTML = '';
+    }
 
-// ── Add Product ───────────────────────────────────────────────────────
-let editingAddId = null;
+    // ── Add Product ───────────────────────────────────────────────────────
+    let editingAddId = null;
 
-async function addProduct() {
-  if (currentUser && currentUser.role === 'staff') {
-    toast('❌ Access denied: Staff cannot add products.', 'error');
-    return;
-  }
-  const date     = document.getElementById('ap_date').value;
-  const product  = document.getElementById('ap_product').value.trim();
-  const qty      = parseInt(document.getElementById('ap_qty').value)||0;
-  const alertEl  = document.getElementById('addProductAlert');
-  const btn      = document.getElementById('addProductBtn');
-  if (!date||!product||qty<=0) { alertEl.innerHTML='<div class="alert alert-error">❌ Please fill all fields with valid values.</div>'; return; }
-  btn.disabled=true; btn.innerHTML='<span class="inline-spinner"></span> Saving…';
-  try {
-    const newQty = (cache.stock[product]||0) + qty;
-    cache.stock[product] = newQty;
-    await db.collection('config').doc('stock').set(cache.stock);
-    const ts = new Date().toISOString();
-    const histEntry = { date, product, qty, user: currentUser.name||currentUser.email, timestamp: ts };
-    const hRef = await db.collection('addHistory').add(histEntry);
-    cache.addHistory.unshift({ id: hRef.id, ...histEntry });
-    const auditEntry = { datetime: ts, action:'Product Added', product, qty, property:'-', remark:'-', user: histEntry.user, timestamp: ts };
-    const aRef = await db.collection('audit').add(auditEntry);
-    cache.audit.unshift({ id: aRef.id, ...auditEntry });
-    alertEl.innerHTML = `<div class="alert alert-success">✅ ${product} (${qty} units) added. New balance: ${newQty}</div>`;
-    toast(`${product} added — Balance: ${newQty}`, 'success');
-    clearAddForm(); renderAddHistory(''); updateAlertBadge();
-  } catch (err) {
-    console.error(err);
-    alertEl.innerHTML = '<div class="alert alert-error">❌ Save failed. Check internet and try again.</div>';
-  }
-  btn.disabled=false; btn.innerHTML='➕ Add to Inventory';
-}
+    async function addProduct() {
+      if (currentUser && currentUser.role === 'staff') {
+        toast('❌ Access denied: Staff cannot add products.', 'error');
+        return;
+      }
+      const date = document.getElementById('ap_date').value;
+      const product = document.getElementById('ap_product').value.trim();
+      const qty = parseInt(document.getElementById('ap_qty').value) || 0;
+      const alertEl = document.getElementById('addProductAlert');
+      const btn = document.getElementById('addProductBtn');
+      if (!date || !product || qty <= 0) { alertEl.innerHTML = '<div class="alert alert-error">❌ Please fill all fields with valid values.</div>'; return; }
+      btn.disabled = true; btn.innerHTML = '<span class="inline-spinner"></span> Saving…';
+      try {
+        const newQty = (cache.stock[product] || 0) + qty;
+        cache.stock[product] = newQty;
+        await db.collection('config').doc('stock').set(cache.stock);
+        const ts = new Date().toISOString();
+        const histEntry = { date, product, qty, user: currentUser.name || currentUser.email, timestamp: ts };
+        const hRef = await db.collection('addHistory').add(histEntry);
+        cache.addHistory.unshift({ id: hRef.id, ...histEntry });
+        const auditEntry = { datetime: ts, action: 'Product Added', product, qty, property: '-', remark: '-', user: histEntry.user, timestamp: ts };
+        const aRef = await db.collection('audit').add(auditEntry);
+        cache.audit.unshift({ id: aRef.id, ...auditEntry });
+        alertEl.innerHTML = `<div class="alert alert-success">✅ ${product} (${qty} units) added. New balance: ${newQty}</div>`;
+        toast(`${product} added — Balance: ${newQty}`, 'success');
+        clearAddForm(); renderAddHistory(''); updateAlertBadge();
+      } catch (err) {
+        console.error(err);
+        alertEl.innerHTML = '<div class="alert alert-error">❌ Save failed. Check internet and try again.</div>';
+      }
+      btn.disabled = false; btn.innerHTML = '➕ Add to Inventory';
+    }
 
-function clearAddForm() {
-  document.getElementById('ap_product').value = '';
-  document.getElementById('ap_qty').value = '';
-  setDefaultDates();
-}
+    function clearAddForm() {
+      document.getElementById('ap_product').value = '';
+      document.getElementById('ap_qty').value = '';
+      setDefaultDates();
+    }
 
-function renderAddHistory(search='') {
-  const tbody = document.getElementById('addHistoryTable');
-  const from = document.getElementById('ah_from')?.value;
-  const to = document.getElementById('ah_to')?.value;
-  const searchVal = search || document.getElementById('ah_search')?.value || '';
+    function renderAddHistory(search = '') {
+      const tbody = document.getElementById('addHistoryTable');
+      const from = document.getElementById('ah_from')?.value;
+      const to = document.getElementById('ah_to')?.value;
+      const searchVal = search || document.getElementById('ah_search')?.value || '';
 
-  const filtered = cache.addHistory.filter(r => {
-    if (from && r.date < from) return false;
-    if (to && r.date > to) return false;
-    if (searchVal && !r.product.toLowerCase().includes(searchVal.toLowerCase())) return false;
-    return true;
-  });
+      const filtered = cache.addHistory.filter(r => {
+        if (from && r.date < from) return false;
+        if (to && r.date > to) return false;
+        if (searchVal && !r.product.toLowerCase().includes(searchVal.toLowerCase())) return false;
+        return true;
+      });
 
-  tbody.innerHTML = filtered.length ? filtered.map(r => `
+      tbody.innerHTML = filtered.length ? filtered.map(r => `
     <tr>
       <td data-label="Date">${formatDate(r.date)}</td>
       <td data-label="Product"><strong>${r.product}</strong></td>
@@ -1151,229 +2171,229 @@ function renderAddHistory(search='') {
         </div>
       </td>
     </tr>`).join('') : `<tr><td colspan="5"><div class="empty-state"><div class="icon">📦</div><p>No stock additions yet</p></div></td></tr>`;
-}
-
-// ── Add Product Edit / Delete ─────────────────────────────────────────
-function startEditAddHistory(id) {
-  const entry = cache.addHistory.find(h => h.id === id);
-  if (!entry) return;
-  
-  editingAddId = id;
-  document.getElementById('ap_date').value = entry.date;
-  document.getElementById('ap_product').value = entry.product;
-  document.getElementById('ap_qty').value = entry.qty;
-  
-  const addBtn = document.getElementById('addProductBtn');
-  addBtn.innerHTML = '💾 Update Entry';
-  addBtn.className = 'btn btn-teal';
-  addBtn.onclick = updateAddProduct;
-  
-  let cancelBtn = document.getElementById('cancelAddEditBtn');
-  if (!cancelBtn) {
-    cancelBtn = document.createElement('button');
-    cancelBtn.id = 'cancelAddEditBtn';
-    cancelBtn.className = 'btn btn-outline';
-    cancelBtn.innerHTML = 'Cancel Edit';
-    cancelBtn.onclick = cancelAddEdit;
-    addBtn.parentNode.appendChild(cancelBtn);
-  }
-  
-  document.getElementById('ap_date').scrollIntoView({ behavior: 'smooth' });
-}
-
-function cancelAddEdit() {
-  editingAddId = null;
-  const addBtn = document.getElementById('addProductBtn');
-  addBtn.innerHTML = '➕ Add to Inventory';
-  addBtn.className = 'btn btn-ocean';
-  addBtn.onclick = addProduct;
-  
-  const cancelBtn = document.getElementById('cancelAddEditBtn');
-  if (cancelBtn) cancelBtn.remove();
-  
-  clearAddForm();
-}
-
-async function updateAddProduct() {
-  if (!editingAddId) return;
-  const date = document.getElementById('ap_date').value;
-  const product = document.getElementById('ap_product').value.trim();
-  const qty = parseInt(document.getElementById('ap_qty').value) || 0;
-  
-  if (!date || !product || qty <= 0) {
-    alert('Please fill all fields with valid values.');
-    return;
-  }
-  
-  const entry = cache.addHistory.find(h => h.id === editingAddId);
-  if (!entry) return;
-  
-  const addBtn = document.getElementById('addProductBtn');
-  addBtn.disabled = true;
-  addBtn.innerHTML = '<span class="inline-spinner"></span> Updating...';
-  
-  try {
-    const oldQty = entry.qty;
-    const oldProduct = entry.product;
-    
-    // Revert old quantity from old product
-    cache.stock[oldProduct] = Math.max(0, (cache.stock[oldProduct] || 0) - oldQty);
-    // Add new quantity to new product
-    cache.stock[product] = (cache.stock[product] || 0) + qty;
-    
-    await db.collection('config').doc('stock').set(cache.stock);
-    
-    const userName = currentUser.name || currentUser.email;
-    const updatedEntry = { date, product, qty, user: userName };
-    await db.collection('addHistory').doc(editingAddId).update(updatedEntry);
-    
-    Object.assign(entry, updatedEntry);
-    
-    const ts = new Date().toISOString();
-    const auditEntry = { datetime: ts, action: 'Add History Edited', product, qty: `${oldQty} ➔ ${qty}`, property: '-', remark: `Edited entry of ${oldProduct}`, user: userName, timestamp: ts };
-    const aRef = await db.collection('audit').add(auditEntry);
-    cache.audit.unshift({ id: aRef.id, ...auditEntry });
-    
-    toast("Stock entry updated successfully.", "success");
-    cancelAddEdit();
-    renderAll();
-  } catch (e) {
-    console.error(e);
-    toast("❌ Failed to update entry.", "error");
-    addBtn.disabled = false;
-    addBtn.innerHTML = '💾 Update Entry';
-  }
-}
-
-async function deleteAddHistory(id) {
-  const pw = prompt("Enter password (9999) to delete this entry:");
-  if (pw !== "9999") {
-    if (pw !== null) toast("❌ Incorrect password.", "error");
-    return;
-  }
-  const entry = cache.addHistory.find(h => h.id === id);
-  if (!entry) return;
-  
-  if (confirm(`Are you sure you want to delete this addition of ${entry.qty} x ${entry.product}?`)) {
-    try {
-      const currentStock = cache.stock[entry.product] || 0;
-      const newStock = Math.max(0, currentStock - entry.qty);
-      
-      cache.stock[entry.product] = newStock;
-      await db.collection('config').doc('stock').set(cache.stock);
-      await db.collection('addHistory').doc(id).delete();
-      
-      const ts = new Date().toISOString();
-      const userName = currentUser.name || currentUser.email;
-      const auditEntry = { datetime: ts, action: 'Add History Deleted', product: entry.product, qty: entry.qty, property: '-', remark: `Deleted addition from ${entry.date}`, user: userName, timestamp: ts };
-      const aRef = await db.collection('audit').add(auditEntry);
-      cache.audit.unshift({ id: aRef.id, ...auditEntry });
-      
-      cache.addHistory = cache.addHistory.filter(h => h.id !== id);
-      
-      toast("Stock addition deleted successfully.", "success");
-      renderAll();
-    } catch (e) {
-      console.error(e);
-      toast("❌ Failed to delete entry. Check connection.", "error");
     }
-  }
-}
 
-function exportAddHistoryExcel() {
-  const from = document.getElementById('ah_from')?.value;
-  const to = document.getElementById('ah_to')?.value;
-  const searchVal = document.getElementById('ah_search')?.value || '';
-  
-  const filtered = cache.addHistory.filter(r => {
-    if (from && r.date < from) return false;
-    if (to && r.date > to) return false;
-    if (searchVal && !r.product.toLowerCase().includes(searchVal.toLowerCase())) return false;
-    return true;
-  });
-  
-  const data = [['Date', 'Product Name', 'Quantity Added', 'Added By']];
-  filtered.forEach(r => data.push([r.date, r.product, r.qty, r.user]));
-  
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Stock Added History');
-  XLSX.writeFile(wb, `Sea_Rock_Stock_Added_${new Date().toISOString().split('T')[0]}.xlsx`);
-  toast('Stock addition history exported', 'success');
-}
+    // ── Add Product Edit / Delete ─────────────────────────────────────────
+    function startEditAddHistory(id) {
+      const entry = cache.addHistory.find(h => h.id === id);
+      if (!entry) return;
 
-// ── Issue Product ─────────────────────────────────────────────────────
-let editingIssueId = null;
+      editingAddId = id;
+      document.getElementById('ap_date').value = entry.date;
+      document.getElementById('ap_product').value = entry.product;
+      document.getElementById('ap_qty').value = entry.qty;
 
-async function issueProduct() {
-  if (currentUser && currentUser.role === 'staff') {
-    toast('❌ Access denied: Staff cannot issue products.', 'error');
-    return;
-  }
-  const date     = document.getElementById('ip_date').value;
-  const product  = document.getElementById('ip_product').value.trim();
-  const property = document.getElementById('ip_property').value;
-  const qty      = parseInt(document.getElementById('ip_qty').value)||0;
-  const remark   = document.getElementById('ip_remark').value;
-  const alertEl  = document.getElementById('issueProductAlert');
-  const btn      = document.getElementById('issueProductBtn');
-  if (!date||!product||!property||qty<=0) { alertEl.innerHTML='<div class="alert alert-error">❌ Please fill all required fields.</div>'; return; }
-  if (!getAllProducts().includes(product)) { alertEl.innerHTML='<div class="alert alert-error">❌ Product not found. Add it to inventory first.</div>'; return; }
-  const balance = getBalance(product);
-  if (qty>balance) { alertEl.innerHTML=`<div class="alert alert-error">❌ Insufficient stock. Available: ${balance}, Requested: ${qty}</div>`; return; }
-  btn.disabled=true; btn.innerHTML='<span class="inline-spinner"></span> Saving…';
-  try {
-    const newBalance = balance - qty;
-    cache.stock[product] = newBalance;
-    await db.collection('config').doc('stock').set(cache.stock);
-    const ts = new Date().toISOString();
-    const userName = currentUser.name||currentUser.email;
-    const issueEntry = { date, product, property, qty, closingBalance: newBalance, remark: remark||'N/A', user: userName, timestamp: ts };
-    const iRef = await db.collection('issues').add(issueEntry);
-    cache.issues.unshift({ id: iRef.id, ...issueEntry });
-    const auditEntry = { datetime: ts, action:'Product Issued', product, qty, property, remark: remark||'N/A', user: userName, timestamp: ts };
-    const aRef = await db.collection('audit').add(auditEntry);
-    cache.audit.unshift({ id: aRef.id, ...auditEntry });
-    alertEl.innerHTML = `<div class="alert alert-success">✅ ${product} (${qty} units) issued to ${property}. Closing balance: ${newBalance}</div>`;
-    toast(`Issued ${qty}× ${product} → ${property}`, 'success');
-    if (newBalance<=10) toast(`⚠️ Low stock: ${product} has only ${newBalance} units left`, 'warning');
-    clearIssueForm(); renderIssueHistory(''); updateAlertBadge();
-  } catch (err) {
-    console.error(err);
-    alertEl.innerHTML = '<div class="alert alert-error">❌ Save failed. Check internet.</div>';
-  }
-  btn.disabled=false; btn.innerHTML='✅ Issue Product';
-}
+      const addBtn = document.getElementById('addProductBtn');
+      addBtn.innerHTML = '💾 Update Entry';
+      addBtn.className = 'btn btn-teal';
+      addBtn.onclick = updateAddProduct;
 
-function clearIssueForm() {
-  document.getElementById('ip_product').value = '';
-  document.getElementById('ip_property').value = '';
-  document.getElementById('ip_qty').value = '';
-  document.getElementById('ip_remark').value = '';
-  document.getElementById('issueBalanceDisplay').innerHTML = '<span class="balance-badge">— Select product</span>';
-  setDefaultDates();
-}
+      let cancelBtn = document.getElementById('cancelAddEditBtn');
+      if (!cancelBtn) {
+        cancelBtn = document.createElement('button');
+        cancelBtn.id = 'cancelAddEditBtn';
+        cancelBtn.className = 'btn btn-outline';
+        cancelBtn.innerHTML = 'Cancel Edit';
+        cancelBtn.onclick = cancelAddEdit;
+        addBtn.parentNode.appendChild(cancelBtn);
+      }
 
-function renderIssueHistory(search='') {
-  const tbody = document.getElementById('issueHistoryTable');
-  const from = document.getElementById('ih_from')?.value;
-  const to = document.getElementById('ih_to')?.value;
-  const searchVal = search || document.getElementById('ih_search')?.value || '';
+      document.getElementById('ap_date').scrollIntoView({ behavior: 'smooth' });
+    }
 
-  const filtered = cache.issues.filter(r => {
-    if (from && r.date < from) return false;
-    if (to && r.date > to) return false;
-    if (searchVal && !r.product.toLowerCase().includes(searchVal.toLowerCase()) && !r.property.toLowerCase().includes(searchVal.toLowerCase())) return false;
-    return true;
-  });
+    function cancelAddEdit() {
+      editingAddId = null;
+      const addBtn = document.getElementById('addProductBtn');
+      addBtn.innerHTML = '➕ Add to Inventory';
+      addBtn.className = 'btn btn-ocean';
+      addBtn.onclick = addProduct;
 
-  tbody.innerHTML = filtered.length ? filtered.map(r => `
+      const cancelBtn = document.getElementById('cancelAddEditBtn');
+      if (cancelBtn) cancelBtn.remove();
+
+      clearAddForm();
+    }
+
+    async function updateAddProduct() {
+      if (!editingAddId) return;
+      const date = document.getElementById('ap_date').value;
+      const product = document.getElementById('ap_product').value.trim();
+      const qty = parseInt(document.getElementById('ap_qty').value) || 0;
+
+      if (!date || !product || qty <= 0) {
+        alert('Please fill all fields with valid values.');
+        return;
+      }
+
+      const entry = cache.addHistory.find(h => h.id === editingAddId);
+      if (!entry) return;
+
+      const addBtn = document.getElementById('addProductBtn');
+      addBtn.disabled = true;
+      addBtn.innerHTML = '<span class="inline-spinner"></span> Updating...';
+
+      try {
+        const oldQty = entry.qty;
+        const oldProduct = entry.product;
+
+        // Revert old quantity from old product
+        cache.stock[oldProduct] = Math.max(0, (cache.stock[oldProduct] || 0) - oldQty);
+        // Add new quantity to new product
+        cache.stock[product] = (cache.stock[product] || 0) + qty;
+
+        await db.collection('config').doc('stock').set(cache.stock);
+
+        const userName = currentUser.name || currentUser.email;
+        const updatedEntry = { date, product, qty, user: userName };
+        await db.collection('addHistory').doc(editingAddId).update(updatedEntry);
+
+        Object.assign(entry, updatedEntry);
+
+        const ts = new Date().toISOString();
+        const auditEntry = { datetime: ts, action: 'Add History Edited', product, qty: `${oldQty} ➔ ${qty}`, property: '-', remark: `Edited entry of ${oldProduct}`, user: userName, timestamp: ts };
+        const aRef = await db.collection('audit').add(auditEntry);
+        cache.audit.unshift({ id: aRef.id, ...auditEntry });
+
+        toast("Stock entry updated successfully.", "success");
+        cancelAddEdit();
+        renderAll();
+      } catch (e) {
+        console.error(e);
+        toast("❌ Failed to update entry.", "error");
+        addBtn.disabled = false;
+        addBtn.innerHTML = '💾 Update Entry';
+      }
+    }
+
+    async function deleteAddHistory(id) {
+      const pw = prompt("Enter password (9999) to delete this entry:");
+      if (pw !== "9999") {
+        if (pw !== null) toast("❌ Incorrect password.", "error");
+        return;
+      }
+      const entry = cache.addHistory.find(h => h.id === id);
+      if (!entry) return;
+
+      if (confirm(`Are you sure you want to delete this addition of ${entry.qty} x ${entry.product}?`)) {
+        try {
+          const currentStock = cache.stock[entry.product] || 0;
+          const newStock = Math.max(0, currentStock - entry.qty);
+
+          cache.stock[entry.product] = newStock;
+          await db.collection('config').doc('stock').set(cache.stock);
+          await db.collection('addHistory').doc(id).delete();
+
+          const ts = new Date().toISOString();
+          const userName = currentUser.name || currentUser.email;
+          const auditEntry = { datetime: ts, action: 'Add History Deleted', product: entry.product, qty: entry.qty, property: '-', remark: `Deleted addition from ${entry.date}`, user: userName, timestamp: ts };
+          const aRef = await db.collection('audit').add(auditEntry);
+          cache.audit.unshift({ id: aRef.id, ...auditEntry });
+
+          cache.addHistory = cache.addHistory.filter(h => h.id !== id);
+
+          toast("Stock addition deleted successfully.", "success");
+          renderAll();
+        } catch (e) {
+          console.error(e);
+          toast("❌ Failed to delete entry. Check connection.", "error");
+        }
+      }
+    }
+
+    function exportAddHistoryExcel() {
+      const from = document.getElementById('ah_from')?.value;
+      const to = document.getElementById('ah_to')?.value;
+      const searchVal = document.getElementById('ah_search')?.value || '';
+
+      const filtered = cache.addHistory.filter(r => {
+        if (from && r.date < from) return false;
+        if (to && r.date > to) return false;
+        if (searchVal && !r.product.toLowerCase().includes(searchVal.toLowerCase())) return false;
+        return true;
+      });
+
+      const data = [['Date', 'Product Name', 'Quantity Added', 'Added By']];
+      filtered.forEach(r => data.push([r.date, r.product, r.qty, r.user]));
+
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Stock Added History');
+      XLSX.writeFile(wb, `Sea_Rock_Stock_Added_${new Date().toISOString().split('T')[0]}.xlsx`);
+      toast('Stock addition history exported', 'success');
+    }
+
+    // ── Issue Product ─────────────────────────────────────────────────────
+    let editingIssueId = null;
+
+    async function issueProduct() {
+      if (currentUser && currentUser.role === 'staff') {
+        toast('❌ Access denied: Staff cannot issue products.', 'error');
+        return;
+      }
+      const date = document.getElementById('ip_date').value;
+      const product = document.getElementById('ip_product').value.trim();
+      const property = document.getElementById('ip_property').value;
+      const qty = parseInt(document.getElementById('ip_qty').value) || 0;
+      const remark = document.getElementById('ip_remark').value;
+      const alertEl = document.getElementById('issueProductAlert');
+      const btn = document.getElementById('issueProductBtn');
+      if (!date || !product || !property || qty <= 0) { alertEl.innerHTML = '<div class="alert alert-error">❌ Please fill all required fields.</div>'; return; }
+      if (!getAllProducts().includes(product)) { alertEl.innerHTML = '<div class="alert alert-error">❌ Product not found. Add it to inventory first.</div>'; return; }
+      const balance = getBalance(product);
+      if (qty > balance) { alertEl.innerHTML = `<div class="alert alert-error">❌ Insufficient stock. Available: ${balance}, Requested: ${qty}</div>`; return; }
+      btn.disabled = true; btn.innerHTML = '<span class="inline-spinner"></span> Saving…';
+      try {
+        const newBalance = balance - qty;
+        cache.stock[product] = newBalance;
+        await db.collection('config').doc('stock').set(cache.stock);
+        const ts = new Date().toISOString();
+        const userName = currentUser.name || currentUser.email;
+        const issueEntry = { date, product, property, qty, closingBalance: newBalance, remark: remark || 'N/A', user: userName, timestamp: ts };
+        const iRef = await db.collection('issues').add(issueEntry);
+        cache.issues.unshift({ id: iRef.id, ...issueEntry });
+        const auditEntry = { datetime: ts, action: 'Product Issued', product, qty, property, remark: remark || 'N/A', user: userName, timestamp: ts };
+        const aRef = await db.collection('audit').add(auditEntry);
+        cache.audit.unshift({ id: aRef.id, ...auditEntry });
+        alertEl.innerHTML = `<div class="alert alert-success">✅ ${product} (${qty} units) issued to ${property}. Closing balance: ${newBalance}</div>`;
+        toast(`Issued ${qty}× ${product} → ${property}`, 'success');
+        if (newBalance <= 10) toast(`⚠️ Low stock: ${product} has only ${newBalance} units left`, 'warning');
+        clearIssueForm(); renderIssueHistory(''); updateAlertBadge();
+      } catch (err) {
+        console.error(err);
+        alertEl.innerHTML = '<div class="alert alert-error">❌ Save failed. Check internet.</div>';
+      }
+      btn.disabled = false; btn.innerHTML = '✅ Issue Product';
+    }
+
+    function clearIssueForm() {
+      document.getElementById('ip_product').value = '';
+      document.getElementById('ip_property').value = '';
+      document.getElementById('ip_qty').value = '';
+      document.getElementById('ip_remark').value = '';
+      document.getElementById('issueBalanceDisplay').innerHTML = '<span class="balance-badge">— Select product</span>';
+      setDefaultDates();
+    }
+
+    function renderIssueHistory(search = '') {
+      const tbody = document.getElementById('issueHistoryTable');
+      const from = document.getElementById('ih_from')?.value;
+      const to = document.getElementById('ih_to')?.value;
+      const searchVal = search || document.getElementById('ih_search')?.value || '';
+
+      const filtered = cache.issues.filter(r => {
+        if (from && r.date < from) return false;
+        if (to && r.date > to) return false;
+        if (searchVal && !r.product.toLowerCase().includes(searchVal.toLowerCase()) && !r.property.toLowerCase().includes(searchVal.toLowerCase())) return false;
+        return true;
+      });
+
+      tbody.innerHTML = filtered.length ? filtered.map(r => `
     <tr>
       <td data-label="Date">${formatDate(r.date)}</td>
       <td data-label="Product"><strong>${r.product}</strong></td>
       <td data-label="Property"><span class="property-tag prop-${r.property.toLowerCase()}">${r.property}</span></td>
       <td data-label="Qty"><span class="qty-pill issued">${r.qty}</span></td>
-      <td data-label="Closing Bal."><span class="qty-pill ${r.closingBalance<=0?'empty':r.closingBalance<=10?'low':''}">${r.closingBalance}</span></td>
+      <td data-label="Closing Bal."><span class="qty-pill ${r.closingBalance <= 0 ? 'empty' : r.closingBalance <= 10 ? 'low' : ''}">${r.closingBalance}</span></td>
       <td data-label="Remark">${r.remark}</td>
       <td data-label="By">${r.user}</td>
       <td data-label="Actions" class="no-print">
@@ -1383,211 +2403,211 @@ function renderIssueHistory(search='') {
         </div>
       </td>
     </tr>`).join('') : `<tr><td colspan="8"><div class="empty-state"><div class="icon">🏷️</div><p>No issues recorded yet</p></div></td></tr>`;
-}
-
-// ── Issue Product Edit / Delete ───────────────────────────────────────
-function startEditIssueHistory(id) {
-  const entry = cache.issues.find(i => i.id === id);
-  if (!entry) return;
-  
-  editingIssueId = id;
-  document.getElementById('ip_date').value = entry.date;
-  document.getElementById('ip_product').value = entry.product;
-  document.getElementById('ip_property').value = entry.property;
-  document.getElementById('ip_qty').value = entry.qty;
-  document.getElementById('ip_remark').value = entry.remark;
-  
-  const issueBtn = document.getElementById('issueProductBtn');
-  issueBtn.innerHTML = '💾 Update Issue';
-  issueBtn.className = 'btn btn-teal';
-  issueBtn.onclick = updateIssueProduct;
-  
-  let cancelBtn = document.getElementById('cancelIssueEditBtn');
-  if (!cancelBtn) {
-    cancelBtn = document.createElement('button');
-    cancelBtn.id = 'cancelIssueEditBtn';
-    cancelBtn.className = 'btn btn-outline';
-    cancelBtn.innerHTML = 'Cancel Edit';
-    cancelBtn.onclick = cancelIssueEdit;
-    issueBtn.parentNode.appendChild(cancelBtn);
-  }
-  
-  updateIssueBalance();
-  document.getElementById('ip_date').scrollIntoView({ behavior: 'smooth' });
-}
-
-function cancelIssueEdit() {
-  editingIssueId = null;
-  const issueBtn = document.getElementById('issueProductBtn');
-  issueBtn.innerHTML = '✅ Issue Product';
-  issueBtn.className = 'btn btn-teal';
-  issueBtn.onclick = issueProduct;
-  
-  const cancelBtn = document.getElementById('cancelIssueEditBtn');
-  if (cancelBtn) cancelBtn.remove();
-  
-  clearIssueForm();
-}
-
-async function updateIssueProduct() {
-  if (!editingIssueId) return;
-  const date = document.getElementById('ip_date').value;
-  const product = document.getElementById('ip_product').value.trim();
-  const property = document.getElementById('ip_property').value;
-  const qty = parseInt(document.getElementById('ip_qty').value) || 0;
-  const remark = document.getElementById('ip_remark').value;
-  
-  if (!date || !product || !property || qty <= 0) {
-    alert('Please fill all required fields.');
-    return;
-  }
-  
-  const entry = cache.issues.find(i => i.id === editingIssueId);
-  if (!entry) return;
-  
-  const oldProduct = entry.product;
-  const oldQty = entry.qty;
-  
-  const tempStock = (cache.stock[oldProduct] || 0) + (oldProduct === product ? oldQty : 0);
-  const currentAvailableForNewProduct = product === oldProduct ? tempStock : (cache.stock[product] || 0);
-  
-  if (qty > currentAvailableForNewProduct) {
-    alert(`Insufficient stock. Available: ${currentAvailableForNewProduct}, Requested: ${qty}`);
-    return;
-  }
-  
-  const issueBtn = document.getElementById('issueProductBtn');
-  issueBtn.disabled = true;
-  issueBtn.innerHTML = '<span class="inline-spinner"></span> Updating...';
-  
-  try {
-    cache.stock[oldProduct] = (cache.stock[oldProduct] || 0) + oldQty;
-    cache.stock[product] = Math.max(0, (cache.stock[product] || 0) - qty);
-    
-    await db.collection('config').doc('stock').set(cache.stock);
-    
-    const userName = currentUser.name || currentUser.email;
-    const updatedEntry = { date, product, property, qty, closingBalance: cache.stock[product], remark: remark || 'N/A', user: userName };
-    await db.collection('issues').doc(editingIssueId).update(updatedEntry);
-    
-    Object.assign(entry, updatedEntry);
-    
-    const ts = new Date().toISOString();
-    const auditEntry = { datetime: ts, action: 'Issue History Edited', product, qty: `${oldQty} ➔ ${qty}`, property, remark: remark || 'N/A', user: userName, timestamp: ts };
-    const aRef = await db.collection('audit').add(auditEntry);
-    cache.audit.unshift({ id: aRef.id, ...auditEntry });
-    
-    toast("Issue entry updated successfully.", "success");
-    cancelIssueEdit();
-    renderAll();
-  } catch (e) {
-    console.error(e);
-    toast("❌ Failed to update issue entry.", "error");
-    issueBtn.disabled = false;
-    issueBtn.innerHTML = '💾 Update Issue';
-  }
-}
-
-async function deleteIssueHistory(id) {
-  const pw = prompt("Enter password (9999) to delete this entry:");
-  if (pw !== "9999") {
-    if (pw !== null) toast("❌ Incorrect password.", "error");
-    return;
-  }
-  const entry = cache.issues.find(i => i.id === id);
-  if (!entry) return;
-  
-  if (confirm(`Are you sure you want to delete this issue of ${entry.qty} x ${entry.product} to ${entry.property}?`)) {
-    try {
-      const currentStock = cache.stock[entry.product] || 0;
-      const newStock = currentStock + entry.qty;
-      
-      cache.stock[entry.product] = newStock;
-      await db.collection('config').doc('stock').set(cache.stock);
-      await db.collection('issues').doc(id).delete();
-      
-      const ts = new Date().toISOString();
-      const userName = currentUser.name || currentUser.email;
-      const auditEntry = { datetime: ts, action: 'Issue History Deleted', product: entry.product, qty: entry.qty, property: entry.property, remark: `Deleted issue from ${entry.date}`, user: userName, timestamp: ts };
-      const aRef = await db.collection('audit').add(auditEntry);
-      cache.audit.unshift({ id: aRef.id, ...auditEntry });
-      
-      cache.issues = cache.issues.filter(i => i.id !== id);
-      
-      toast("Issue entry deleted successfully.", "success");
-      renderAll();
-    } catch (e) {
-      console.error(e);
-      toast("❌ Failed to delete entry. Check connection.", "error");
     }
-  }
-}
 
-function exportIssueHistoryExcel() {
-  const from = document.getElementById('ih_from')?.value;
-  const to = document.getElementById('ih_to')?.value;
-  const searchVal = document.getElementById('ih_search')?.value || '';
-  
-  const filtered = cache.issues.filter(r => {
-    if (from && r.date < from) return false;
-    if (to && r.date > to) return false;
-    if (searchVal && !r.product.toLowerCase().includes(searchVal.toLowerCase()) && !r.property.toLowerCase().includes(searchVal.toLowerCase())) return false;
-    return true;
-  });
-  
-  const data = [['Date', 'Product Name', 'Property', 'Quantity Issued', 'Closing Balance', 'Remark', 'Issued By']];
-  filtered.forEach(r => data.push([r.date, r.product, r.property, r.qty, r.closingBalance, r.remark, r.user]));
-  
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Issue History');
-  XLSX.writeFile(wb, `Sea_Rock_Issues_History_${new Date().toISOString().split('T')[0]}.xlsx`);
-  toast('Issue history exported', 'success');
-}
+    // ── Issue Product Edit / Delete ───────────────────────────────────────
+    function startEditIssueHistory(id) {
+      const entry = cache.issues.find(i => i.id === id);
+      if (!entry) return;
 
-// ── Stock Balance ─────────────────────────────────────────────────────
-function renderStockBalance(search='') {
-  const tbody = document.getElementById('stockBalanceTable');
-  let entries = Object.entries(cache.stock).filter(([k])=>!search||k.toLowerCase().includes(search.toLowerCase()));
-  entries.sort((a,b)=>a[0].localeCompare(b[0]));
-  tbody.innerHTML = entries.length ? entries.map(([product,qty],i)=>{
-    const status = qty<=0 ? `<span class="qty-pill empty">Out of Stock</span>` :
-                   qty<=10 ? `<span class="qty-pill low">⚠️ Low Stock</span>` :
-                   `<span style="color:var(--success);font-weight:600;font-size:12px">✅ In Stock</span>`;
-    return `<tr>
-      <td data-label="#">${i+1}</td>
+      editingIssueId = id;
+      document.getElementById('ip_date').value = entry.date;
+      document.getElementById('ip_product').value = entry.product;
+      document.getElementById('ip_property').value = entry.property;
+      document.getElementById('ip_qty').value = entry.qty;
+      document.getElementById('ip_remark').value = entry.remark;
+
+      const issueBtn = document.getElementById('issueProductBtn');
+      issueBtn.innerHTML = '💾 Update Issue';
+      issueBtn.className = 'btn btn-teal';
+      issueBtn.onclick = updateIssueProduct;
+
+      let cancelBtn = document.getElementById('cancelIssueEditBtn');
+      if (!cancelBtn) {
+        cancelBtn = document.createElement('button');
+        cancelBtn.id = 'cancelIssueEditBtn';
+        cancelBtn.className = 'btn btn-outline';
+        cancelBtn.innerHTML = 'Cancel Edit';
+        cancelBtn.onclick = cancelIssueEdit;
+        issueBtn.parentNode.appendChild(cancelBtn);
+      }
+
+      updateIssueBalance();
+      document.getElementById('ip_date').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function cancelIssueEdit() {
+      editingIssueId = null;
+      const issueBtn = document.getElementById('issueProductBtn');
+      issueBtn.innerHTML = '✅ Issue Product';
+      issueBtn.className = 'btn btn-teal';
+      issueBtn.onclick = issueProduct;
+
+      const cancelBtn = document.getElementById('cancelIssueEditBtn');
+      if (cancelBtn) cancelBtn.remove();
+
+      clearIssueForm();
+    }
+
+    async function updateIssueProduct() {
+      if (!editingIssueId) return;
+      const date = document.getElementById('ip_date').value;
+      const product = document.getElementById('ip_product').value.trim();
+      const property = document.getElementById('ip_property').value;
+      const qty = parseInt(document.getElementById('ip_qty').value) || 0;
+      const remark = document.getElementById('ip_remark').value;
+
+      if (!date || !product || !property || qty <= 0) {
+        alert('Please fill all required fields.');
+        return;
+      }
+
+      const entry = cache.issues.find(i => i.id === editingIssueId);
+      if (!entry) return;
+
+      const oldProduct = entry.product;
+      const oldQty = entry.qty;
+
+      const tempStock = (cache.stock[oldProduct] || 0) + (oldProduct === product ? oldQty : 0);
+      const currentAvailableForNewProduct = product === oldProduct ? tempStock : (cache.stock[product] || 0);
+
+      if (qty > currentAvailableForNewProduct) {
+        alert(`Insufficient stock. Available: ${currentAvailableForNewProduct}, Requested: ${qty}`);
+        return;
+      }
+
+      const issueBtn = document.getElementById('issueProductBtn');
+      issueBtn.disabled = true;
+      issueBtn.innerHTML = '<span class="inline-spinner"></span> Updating...';
+
+      try {
+        cache.stock[oldProduct] = (cache.stock[oldProduct] || 0) + oldQty;
+        cache.stock[product] = Math.max(0, (cache.stock[product] || 0) - qty);
+
+        await db.collection('config').doc('stock').set(cache.stock);
+
+        const userName = currentUser.name || currentUser.email;
+        const updatedEntry = { date, product, property, qty, closingBalance: cache.stock[product], remark: remark || 'N/A', user: userName };
+        await db.collection('issues').doc(editingIssueId).update(updatedEntry);
+
+        Object.assign(entry, updatedEntry);
+
+        const ts = new Date().toISOString();
+        const auditEntry = { datetime: ts, action: 'Issue History Edited', product, qty: `${oldQty} ➔ ${qty}`, property, remark: remark || 'N/A', user: userName, timestamp: ts };
+        const aRef = await db.collection('audit').add(auditEntry);
+        cache.audit.unshift({ id: aRef.id, ...auditEntry });
+
+        toast("Issue entry updated successfully.", "success");
+        cancelIssueEdit();
+        renderAll();
+      } catch (e) {
+        console.error(e);
+        toast("❌ Failed to update issue entry.", "error");
+        issueBtn.disabled = false;
+        issueBtn.innerHTML = '💾 Update Issue';
+      }
+    }
+
+    async function deleteIssueHistory(id) {
+      const pw = prompt("Enter password (9999) to delete this entry:");
+      if (pw !== "9999") {
+        if (pw !== null) toast("❌ Incorrect password.", "error");
+        return;
+      }
+      const entry = cache.issues.find(i => i.id === id);
+      if (!entry) return;
+
+      if (confirm(`Are you sure you want to delete this issue of ${entry.qty} x ${entry.product} to ${entry.property}?`)) {
+        try {
+          const currentStock = cache.stock[entry.product] || 0;
+          const newStock = currentStock + entry.qty;
+
+          cache.stock[entry.product] = newStock;
+          await db.collection('config').doc('stock').set(cache.stock);
+          await db.collection('issues').doc(id).delete();
+
+          const ts = new Date().toISOString();
+          const userName = currentUser.name || currentUser.email;
+          const auditEntry = { datetime: ts, action: 'Issue History Deleted', product: entry.product, qty: entry.qty, property: entry.property, remark: `Deleted issue from ${entry.date}`, user: userName, timestamp: ts };
+          const aRef = await db.collection('audit').add(auditEntry);
+          cache.audit.unshift({ id: aRef.id, ...auditEntry });
+
+          cache.issues = cache.issues.filter(i => i.id !== id);
+
+          toast("Issue entry deleted successfully.", "success");
+          renderAll();
+        } catch (e) {
+          console.error(e);
+          toast("❌ Failed to delete entry. Check connection.", "error");
+        }
+      }
+    }
+
+    function exportIssueHistoryExcel() {
+      const from = document.getElementById('ih_from')?.value;
+      const to = document.getElementById('ih_to')?.value;
+      const searchVal = document.getElementById('ih_search')?.value || '';
+
+      const filtered = cache.issues.filter(r => {
+        if (from && r.date < from) return false;
+        if (to && r.date > to) return false;
+        if (searchVal && !r.product.toLowerCase().includes(searchVal.toLowerCase()) && !r.property.toLowerCase().includes(searchVal.toLowerCase())) return false;
+        return true;
+      });
+
+      const data = [['Date', 'Product Name', 'Property', 'Quantity Issued', 'Closing Balance', 'Remark', 'Issued By']];
+      filtered.forEach(r => data.push([r.date, r.product, r.property, r.qty, r.closingBalance, r.remark, r.user]));
+
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Issue History');
+      XLSX.writeFile(wb, `Sea_Rock_Issues_History_${new Date().toISOString().split('T')[0]}.xlsx`);
+      toast('Issue history exported', 'success');
+    }
+
+    // ── Stock Balance ─────────────────────────────────────────────────────
+    function renderStockBalance(search = '') {
+      const tbody = document.getElementById('stockBalanceTable');
+      let entries = Object.entries(cache.stock).filter(([k]) => !search || k.toLowerCase().includes(search.toLowerCase()));
+      entries.sort((a, b) => a[0].localeCompare(b[0]));
+      tbody.innerHTML = entries.length ? entries.map(([product, qty], i) => {
+        const status = qty <= 0 ? `<span class="qty-pill empty">Out of Stock</span>` :
+          qty <= 10 ? `<span class="qty-pill low">⚠️ Low Stock</span>` :
+            `<span style="color:var(--success);font-weight:600;font-size:12px">✅ In Stock</span>`;
+        return `<tr>
+      <td data-label="#">${i + 1}</td>
       <td data-label="Product"><strong>${product}</strong></td>
-      <td data-label="Balance Qty"><span class="qty-pill ${qty<=0?'empty':qty<=10?'low':''}">${qty}</span></td>
+      <td data-label="Balance Qty"><span class="qty-pill ${qty <= 0 ? 'empty' : qty <= 10 ? 'low' : ''}">${qty}</span></td>
       <td data-label="Status">${status}</td>
     </tr>`;
-  }).join('') : `<tr><td colspan="4"><div class="empty-state"><div class="icon">📋</div><p>No products in inventory</p></div></td></tr>`;
-}
+      }).join('') : `<tr><td colspan="4"><div class="empty-state"><div class="icon">📋</div><p>No products in inventory</p></div></td></tr>`;
+    }
 
-// ── Issue Report ──────────────────────────────────────────────────────
-function setReportTab(tab) {
-  reportTab = tab;
-  ['all','Garbo','Odon','Sheldon'].forEach(t=>{
-    const b=document.getElementById('tab-'+t);
-    if(b){b.style.background=t===tab?'var(--navy)':'white';b.style.color=t===tab?'white':'var(--text-secondary)';b.style.borderColor=t===tab?'var(--navy)':'var(--border)';}
-  });
-  renderIssueReport();
-}
+    // ── Issue Report ──────────────────────────────────────────────────────
+    function setReportTab(tab) {
+      reportTab = tab;
+      ['all', 'Garbo', 'Odon', 'Sheldon'].forEach(t => {
+        const b = document.getElementById('tab-' + t);
+        if (b) { b.style.background = t === tab ? 'var(--navy)' : 'white'; b.style.color = t === tab ? 'white' : 'var(--text-secondary)'; b.style.borderColor = t === tab ? 'var(--navy)' : 'var(--border)'; }
+      });
+      renderIssueReport();
+    }
 
-function renderIssueReport() {
-  const from=document.getElementById('ir_from')?.value;
-  const to=document.getElementById('ir_to')?.value;
-  const propFilter=document.getElementById('ir_property')?.value||'';
-  const prodFilter=document.getElementById('ir_product')?.value?.trim().toLowerCase()||'';
-  const filtered = cache.issues.filter(r=>{
-    if(from&&r.date<from)return false;
-    if(to&&r.date>to)return false;
-    if(propFilter&&r.property!==propFilter)return false;
-    if(prodFilter&&!r.product.toLowerCase().includes(prodFilter))return false;
-    if(reportTab!=='all'&&r.property!==reportTab)return false;
-    return true;
-  });
-  const tbody=document.getElementById('issueReportTable');
-  tbody.innerHTML = filtered.length ? filtered.map(r=>`
+    function renderIssueReport() {
+      const from = document.getElementById('ir_from')?.value;
+      const to = document.getElementById('ir_to')?.value;
+      const propFilter = document.getElementById('ir_property')?.value || '';
+      const prodFilter = document.getElementById('ir_product')?.value?.trim().toLowerCase() || '';
+      const filtered = cache.issues.filter(r => {
+        if (from && r.date < from) return false;
+        if (to && r.date > to) return false;
+        if (propFilter && r.property !== propFilter) return false;
+        if (prodFilter && !r.product.toLowerCase().includes(prodFilter)) return false;
+        if (reportTab !== 'all' && r.property !== reportTab) return false;
+        return true;
+      });
+      const tbody = document.getElementById('issueReportTable');
+      tbody.innerHTML = filtered.length ? filtered.map(r => `
     <tr>
       <td data-label="Date">${formatDate(r.date)}</td>
       <td data-label="Product"><strong>${r.product}</strong></td>
@@ -1597,224 +2617,225 @@ function renderIssueReport() {
       <td data-label="Remark">${r.remark}</td>
       <td data-label="By">${r.user}</td>
     </tr>`).join('') : `<tr><td colspan="7"><div class="empty-state"><div class="icon">📈</div><p>No records found</p></div></td></tr>`;
-}
+    }
 
-// ── Audit ─────────────────────────────────────────────────────────────
-function renderAudit(search='') {
-  const tbody=document.getElementById('auditTable');
-  const filtered=cache.audit.filter(r=>!search||r.product.toLowerCase().includes(search.toLowerCase())||r.action.toLowerCase().includes(search.toLowerCase()));
-  tbody.innerHTML = filtered.length ? filtered.map(r=>`
+    // ── Audit ─────────────────────────────────────────────────────────────
+    function renderAudit(search = '') {
+      const tbody = document.getElementById('auditTable');
+      const filtered = cache.audit.filter(r => !search || r.product.toLowerCase().includes(search.toLowerCase()) || r.action.toLowerCase().includes(search.toLowerCase()));
+      tbody.innerHTML = filtered.length ? filtered.map(r => `
     <tr>
       <td data-label="Date & Time" style="white-space:nowrap">${formatDateTime(r.datetime)}</td>
-      <td data-label="Action"><span style="background:${r.action.includes('Added')?'rgba(30,95,168,0.1)':'rgba(14,148,136,0.1)'};color:${r.action.includes('Added')?'var(--ocean)':'var(--teal)'};padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600">${r.action}</span></td>
+      <td data-label="Action"><span style="background:${r.action.includes('Added') ? 'rgba(30,95,168,0.1)' : 'rgba(14,148,136,0.1)'};color:${r.action.includes('Added') ? 'var(--ocean)' : 'var(--teal)'};padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600">${r.action}</span></td>
       <td data-label="Product"><strong>${r.product}</strong></td>
       <td data-label="Qty"><span class="qty-pill">${r.qty}</span></td>
       <td data-label="Property">${r.property}</td>
       <td data-label="Remark">${r.remark}</td>
       <td data-label="User">${r.user}</td>
     </tr>`).join('') : `<tr><td colspan="7"><div class="empty-state"><div class="icon">🔍</div><p>No audit records</p></div></td></tr>`;
-}
+    }
 
-// ── User Management ───────────────────────────────────────────────────
-async function addUser() {
-  const name    = document.getElementById('nu_name').value.trim();
-  const email   = document.getElementById('nu_email').value.trim();
-  const pass    = document.getElementById('nu_pass').value;
-  const role    = document.getElementById('nu_role').value;
-  const alertEl = document.getElementById('userAlert');
-  const btn     = document.getElementById('addUserBtn');
+    // ── User Management ───────────────────────────────────────────────────
+    async function addUser() {
+      const name = document.getElementById('nu_name').value.trim();
+      const email = document.getElementById('nu_email').value.trim();
+      const pass = document.getElementById('nu_pass').value;
+      const role = document.getElementById('nu_role').value;
+      const alertEl = document.getElementById('userAlert');
+      const btn = document.getElementById('addUserBtn');
 
-  if (!name||!email||!pass) { alertEl.innerHTML='<div class="alert alert-error">❌ Please fill all fields.</div>'; return; }
-  if (pass.length<6) { alertEl.innerHTML='<div class="alert alert-error">❌ Password must be at least 6 characters.</div>'; return; }
+      if (!name || !email || !pass) { alertEl.innerHTML = '<div class="alert alert-error">❌ Please fill all fields.</div>'; return; }
+      if (pass.length < 6) { alertEl.innerHTML = '<div class="alert alert-error">❌ Password must be at least 6 characters.</div>'; return; }
 
-  btn.disabled=true; btn.innerHTML='<span class="inline-spinner"></span> Creating…';
-  try {
-    // Create in Firebase Auth via secondary app (doesn't sign out current admin)
-    const cred = await secondaryAuth.createUserWithEmailAndPassword(email, pass);
-    const uid = cred.user.uid;
+      btn.disabled = true; btn.innerHTML = '<span class="inline-spinner"></span> Creating…';
+      try {
+        // Create in Firebase Auth via secondary app (doesn't sign out current admin)
+        const cred = await secondaryAuth.createUserWithEmailAndPassword(email, pass);
+        const uid = cred.user.uid;
 
-    // Sign out from secondary app immediately
-    await secondaryAuth.signOut();
+        // Sign out from secondary app immediately
+        await secondaryAuth.signOut();
 
-    // Save profile to Firestore
-    const profile = { name, email, role };
-    await db.collection('userProfiles').doc(uid).set(profile);
-    cache.users.push({ id: uid, ...profile });
+        // Save profile to Firestore
+        const profile = { name, email, role };
+        await db.collection('userProfiles').doc(uid).set(profile);
+        cache.users.push({ id: uid, ...profile });
 
-    alertEl.innerHTML = '<div class="alert alert-success">✅ User created successfully.</div>';
-    toast(`${name} added as ${role}`, 'success');
-    document.getElementById('nu_name').value = '';
-    document.getElementById('nu_email').value = '';
-    document.getElementById('nu_pass').value = '';
-    renderUsers();
-  } catch (err) {
-    console.error(err);
-    let msg = '❌ Failed to create user.';
-    if (err.code==='auth/email-already-in-use') msg = '❌ This email is already registered.';
-    else if (err.code==='auth/invalid-email') msg = '❌ Invalid email address.';
-    else if (err.code==='auth/weak-password') msg = '❌ Password is too weak (min 6 characters).';
-    alertEl.innerHTML = `<div class="alert alert-error">${msg}</div>`;
-  }
-  btn.disabled=false; btn.innerHTML='➕ Create User';
-}
+        alertEl.innerHTML = '<div class="alert alert-success">✅ User created successfully.</div>';
+        toast(`${name} added as ${role}`, 'success');
+        document.getElementById('nu_name').value = '';
+        document.getElementById('nu_email').value = '';
+        document.getElementById('nu_pass').value = '';
+        renderUsers();
+      } catch (err) {
+        console.error(err);
+        let msg = '❌ Failed to create user.';
+        if (err.code === 'auth/email-already-in-use') msg = '❌ This email is already registered.';
+        else if (err.code === 'auth/invalid-email') msg = '❌ Invalid email address.';
+        else if (err.code === 'auth/weak-password') msg = '❌ Password is too weak (min 6 characters).';
+        alertEl.innerHTML = `<div class="alert alert-error">${msg}</div>`;
+      }
+      btn.disabled = false; btn.innerHTML = '➕ Create User';
+    }
 
-async function deleteUser(id) {
-  if (!confirm('Remove this user? They will no longer be able to log in.')) return;
-  try {
-    // Remove Firestore profile — Firebase Auth account remains but profile lookup fails → access denied
-    await db.collection('userProfiles').doc(id).delete();
-    cache.users = cache.users.filter(u=>u.id!==id);
-    renderUsers();
-    toast('User removed', 'success');
-  } catch (err) {
-    console.error(err);
-    toast('Failed to remove user', 'error');
-  }
-}
+    async function deleteUser(id) {
+      if (!confirm('Remove this user? They will no longer be able to log in.')) return;
+      try {
+        // Remove Firestore profile — Firebase Auth account remains but profile lookup fails → access denied
+        await db.collection('userProfiles').doc(id).delete();
+        cache.users = cache.users.filter(u => u.id !== id);
+        renderUsers();
+        toast('User removed', 'success');
+      } catch (err) {
+        console.error(err);
+        toast('Failed to remove user', 'error');
+      }
+    }
 
-function renderUsers() {
-  const tbody = document.getElementById('userTable');
-  if (!cache.users.length) {
-    tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="icon">👥</div><p>No users found</p></div></td></tr>';
-    return;
-  }
-  tbody.innerHTML = cache.users.map(u=>`
+    function renderUsers() {
+      const tbody = document.getElementById('userTable');
+      if (!cache.users.length) {
+        tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="icon">👥</div><p>No users found</p></div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = cache.users.map(u => `
     <tr>
       <td><strong>${u.name}</strong></td>
       <td style="font-size:12px;color:var(--text-muted)">${u.email}</td>
-      <td><span style="background:${u.role==='admin'?'rgba(30,95,168,0.1)':'rgba(14,148,136,0.1)'};color:${u.role==='admin'?'var(--ocean)':'var(--teal)'};padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;text-transform:uppercase">${u.role}</span></td>
-      <td>${u.id===currentUser?.uid?'<span style="color:var(--text-muted);font-size:12px">Current User</span>':`<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}')">🗑️ Remove</button>`}</td>
+      <td><span style="background:${u.role === 'admin' ? 'rgba(30,95,168,0.1)' : 'rgba(14,148,136,0.1)'};color:${u.role === 'admin' ? 'var(--ocean)' : 'var(--teal)'};padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;text-transform:uppercase">${u.role}</span></td>
+      <td>${u.id === currentUser?.uid ? '<span style="color:var(--text-muted);font-size:12px">Current User</span>' : `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}')">🗑️ Remove</button>`}</td>
     </tr>`).join('');
-}
+    }
 
-// ── Alerts ────────────────────────────────────────────────────────────
-function getLowStockItems() {
-  return Object.entries(cache.stock).filter(([,qty])=>qty<=10).sort((a,b)=>a[1]-b[1]);
-}
-function updateAlertBadge() {
-  const count = getLowStockItems().length;
-  const badge = document.getElementById('alertBadge');
-  badge.textContent = count;
-  badge.style.display = count>0?'inline':'none';
-}
-function renderAlerts() {
-  const items = getLowStockItems();
-  const container = document.getElementById('alertsContent');
-  if (!items.length) { container.innerHTML='<div class="card"><div class="alert alert-success">✅ All products are well-stocked. No alerts.</div></div>'; return; }
-  const out = items.filter(([,q])=>q<=0);
-  const low = items.filter(([,q])=>q>0);
-  let html = '';
-  if (out.length) html += `<div class="card"><div class="card-title"><span>⛔</span> Out of Stock (${out.length})</div><div class="low-stock-alerts">${out.map(([p])=>`<div class="low-stock-item out"><span>⛔</span><div><div class="product-name">${p}</div><div class="stock-qty">0 units remaining</div></div></div>`).join('')}</div></div>`;
-  if (low.length) html += `<div class="card"><div class="card-title"><span>⚠️</span> Low Stock — Below 10 Units (${low.length})</div><div class="low-stock-alerts">${low.map(([p,q])=>`<div class="low-stock-item"><span>⚠️</span><div><div class="product-name">${p}</div><div class="stock-qty">${q} units remaining</div></div></div>`).join('')}</div></div>`;
-  container.innerHTML = html;
-}
+    // ── Alerts ────────────────────────────────────────────────────────────
+    function getLowStockItems() {
+      return Object.entries(cache.stock).filter(([, qty]) => qty <= 10).sort((a, b) => a[1] - b[1]);
+    }
+    function updateAlertBadge() {
+      const count = getLowStockItems().length;
+      const badge = document.getElementById('alertBadge');
+      badge.textContent = count;
+      badge.style.display = count > 0 ? 'inline' : 'none';
+    }
+    function renderAlerts() {
+      const items = getLowStockItems();
+      const container = document.getElementById('alertsContent');
+      if (!items.length) { container.innerHTML = '<div class="card"><div class="alert alert-success">✅ All products are well-stocked. No alerts.</div></div>'; return; }
+      const out = items.filter(([, q]) => q <= 0);
+      const low = items.filter(([, q]) => q > 0);
+      let html = '';
+      if (out.length) html += `<div class="card"><div class="card-title"><span>⛔</span> Out of Stock (${out.length})</div><div class="low-stock-alerts">${out.map(([p]) => `<div class="low-stock-item out"><span>⛔</span><div><div class="product-name">${p}</div><div class="stock-qty">0 units remaining</div></div></div>`).join('')}</div></div>`;
+      if (low.length) html += `<div class="card"><div class="card-title"><span>⚠️</span> Low Stock — Below 10 Units (${low.length})</div><div class="low-stock-alerts">${low.map(([p, q]) => `<div class="low-stock-item"><span>⚠️</span><div><div class="product-name">${p}</div><div class="stock-qty">${q} units remaining</div></div></div>`).join('')}</div></div>`;
+      container.innerHTML = html;
+    }
 
-// ── Dashboard ─────────────────────────────────────────────────────────
-function renderDashboard() {
-  const stock=cache.stock; const issues=cache.issues;
-  const products=Object.keys(stock);
-  const totalQty=Object.values(stock).reduce((a,b)=>a+b,0);
-  const totalIssued=issues.reduce((a,r)=>a+r.qty,0);
-  const lowCount=getLowStockItems().length;
+    // ── Dashboard ─────────────────────────────────────────────────────────
+    function renderDashboard() {
+      const stock = cache.stock; const issues = cache.issues;
+      const products = Object.keys(stock);
+      const totalQty = Object.values(stock).reduce((a, b) => a + b, 0);
+      const totalIssued = issues.reduce((a, r) => a + r.qty, 0);
+      const lowCount = getLowStockItems().length;
 
-  document.getElementById('dashStats').innerHTML=`
+      document.getElementById('dashStats').innerHTML = `
     <div class="stat-card"><div class="stat-icon blue">📦</div><div class="stat-value">${products.length}</div><div class="stat-label">Total Products</div></div>
     <div class="stat-card"><div class="stat-icon teal">📊</div><div class="stat-value">${totalQty}</div><div class="stat-label">Total Stock Units</div></div>
     <div class="stat-card"><div class="stat-icon orange">🏷️</div><div class="stat-value">${totalIssued}</div><div class="stat-label">Total Issued</div></div>
     <div class="stat-card"><div class="stat-icon red">⚠️</div><div class="stat-value">${lowCount}</div><div class="stat-label">Low / Out of Stock</div></div>`;
 
-  const props=['Garbo','Odon','Sheldon'];
-  const dotClass=['dot-garbo','dot-odon','dot-sheldon'];
-  document.getElementById('propertyCards').innerHTML = props.map((p,i)=>{
-    const pi=issues.filter(r=>r.property===p);
-    const pq=pi.reduce((a,r)=>a+r.qty,0);
-    const last=pi[0];
-    return `<div class="property-card"><div class="property-card-header"><div class="property-dot ${dotClass[i]}"></div><div>
+      const props = ['Garbo', 'Odon', 'Sheldon'];
+      const dotClass = ['dot-garbo', 'dot-odon', 'dot-sheldon'];
+      document.getElementById('propertyCards').innerHTML = props.map((p, i) => {
+        const pi = issues.filter(r => r.property === p);
+        const pq = pi.reduce((a, r) => a + r.qty, 0);
+        const last = pi[0];
+        return `<div class="property-card"><div class="property-card-header"><div class="property-dot ${dotClass[i]}"></div><div>
       <div class="property-card-name">${p}</div>
-      <div class="property-card-sub">${p==='Garbo'?'Hotel Sea Rock Villa':p==='Odon'?'Hotel Tania Sea Rock':'Sea Rock Villa'}</div>
+      <div class="property-card-sub">${p === 'Garbo' ? 'Hotel Sea Rock Villa' : p === 'Odon' ? 'Hotel Tania Sea Rock' : 'Sea Rock Villa'}</div>
     </div></div>
     <div class="property-stat"><span class="property-stat-label">Total Issues</span><span class="property-stat-value">${pi.length}</span></div>
     <div class="property-stat"><span class="property-stat-label">Units Consumed</span><span class="property-stat-value">${pq}</span></div>
-    <div class="property-stat"><span class="property-stat-label">Last Issue</span><span class="property-stat-value" style="font-size:11px;font-family:Inter">${last?formatDate(last.date):'Never'}</span></div>
+    <div class="property-stat"><span class="property-stat-label">Last Issue</span><span class="property-stat-value" style="font-size:11px;font-family:Inter">${last ? formatDate(last.date) : 'Never'}</span></div>
     </div>`;
-  }).join('');
+      }).join('');
 
-  const lowItems=getLowStockItems();
-  document.getElementById('lowStockBanner').innerHTML = lowItems.length ?
-    `<div class="alert alert-warning" style="margin-bottom:16px">⚠️ <strong>${lowItems.length} product(s)</strong> running low: ${lowItems.slice(0,3).map(([p,q])=>`${p} (${q})`).join(', ')}${lowItems.length>3?'…':''} <a href="#" onclick="showPage('alerts')" style="color:inherit;font-weight:700">View alerts →</a></div>` : '';
+      const lowItems = getLowStockItems();
+      document.getElementById('lowStockBanner').innerHTML = lowItems.length ?
+        `<div class="alert alert-warning" style="margin-bottom:16px">⚠️ <strong>${lowItems.length} product(s)</strong> running low: ${lowItems.slice(0, 3).map(([p, q]) => `${p} (${q})`).join(', ')}${lowItems.length > 3 ? '…' : ''} <a href="#" onclick="showPage('alerts')" style="color:inherit;font-weight:700">View alerts →</a></div>` : '';
 
-  const tbody=document.getElementById('recentActivityTable');
-  const recent=cache.audit.slice(0,8);
-  tbody.innerHTML = recent.length ? recent.map(r=>`
+      const tbody = document.getElementById('recentActivityTable');
+      const recent = cache.audit.slice(0, 8);
+      tbody.innerHTML = recent.length ? recent.map(r => `
     <tr>
       <td style="font-size:11px;color:var(--text-muted);white-space:nowrap">${formatDateTime(r.datetime)}</td>
-      <td><span style="background:${r.action.includes('Added')?'rgba(30,95,168,0.1)':'rgba(14,148,136,0.1)'};color:${r.action.includes('Added')?'var(--ocean)':'var(--teal)'};padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600">${r.action}</span></td>
+      <td><span style="background:${r.action.includes('Added') ? 'rgba(30,95,168,0.1)' : 'rgba(14,148,136,0.1)'};color:${r.action.includes('Added') ? 'var(--ocean)' : 'var(--teal)'};padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600">${r.action}</span></td>
       <td><strong>${r.product}</strong></td>
       <td><span class="qty-pill">${r.qty}</span></td>
       <td>${r.user}</td>
     </tr>`).join('') : `<tr><td colspan="5"><div class="empty-state"><p>No activity yet</p></div></td></tr>`;
 
-  updateAlertBadge();
-}
+      updateAlertBadge();
+    }
 
-// ── Export ────────────────────────────────────────────────────────────
-function exportStockExcel() {
-  const data=[['#','Product Name','Balance Quantity','Status']];
-  Object.entries(cache.stock).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([p,q],i)=>data.push([i+1,p,q,q<=0?'Out of Stock':q<=10?'Low Stock':'In Stock']));
-  const ws=XLSX.utils.aoa_to_sheet(data); const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Stock Balance');
-  XLSX.writeFile(wb,`Sea_Rock_Stock_${new Date().toISOString().split('T')[0]}.xlsx`);
-  toast('Excel exported','success');
-}
-function exportStockPDF() {
-  const entries=Object.entries(cache.stock).sort((a,b)=>a[0].localeCompare(b[0]));
-  const html=`<html><head><style>body{font-family:Arial;padding:24px;color:#0f1f3d}h1{font-size:18px}p{font-size:12px;color:#718096;margin-bottom:12px}table{width:100%;border-collapse:collapse}th{background:#0f1f3d;color:white;padding:8px 12px;text-align:left;font-size:11px}td{padding:8px 12px;border-bottom:1px solid #dde3ee;font-size:12px}</style></head><body>
-  <h1>Sea Rock Inn — Stock Balance</h1><p>Generated: ${new Date().toLocaleString()}</p>
-  <table><tr><th>#</th><th>Product</th><th>Balance Qty</th><th>Status</th></tr>${entries.map(([p,q],i)=>`<tr><td>${i+1}</td><td>${p}</td><td>${q}</td><td>${q<=0?'Out of Stock':q<=10?'Low Stock':'In Stock'}</td></tr>`).join('')}</table></body></html>`;
-  const win=window.open('','_blank'); win.document.write(html); win.document.close(); win.print();
-}
-function exportIssueExcel() {
-  const from=document.getElementById('ir_from')?.value;
-  const to=document.getElementById('ir_to')?.value;
-  const propFilter=document.getElementById('ir_property')?.value||'';
-  const filtered=cache.issues.filter(r=>{
-    if(from&&r.date<from)return false; if(to&&r.date>to)return false;
-    if(propFilter&&r.property!==propFilter)return false;
-    if(reportTab!=='all'&&r.property!==reportTab)return false; return true;
-  });
-  const data=[['Date','Product','Property','Qty Issued','Closing Balance','Remark','By']];
-  filtered.forEach(r=>data.push([r.date,r.product,r.property,r.qty,r.closingBalance,r.remark,r.user]));
-  const ws=XLSX.utils.aoa_to_sheet(data); const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Issue Report');
-  XLSX.writeFile(wb,`Sea_Rock_Issues_${new Date().toISOString().split('T')[0]}.xlsx`);
-  toast('Issue report exported','success');
-}
+    // ── Export ────────────────────────────────────────────────────────────
+    function exportStockExcel() {
+      const data = [['#', 'Product Name', 'Balance Quantity', 'Status']];
+      Object.entries(cache.stock).sort((a, b) => a[0].localeCompare(b[0])).forEach(([p, q], i) => data.push([i + 1, p, q, q <= 0 ? 'Out of Stock' : q <= 10 ? 'Low Stock' : 'In Stock']));
+      const ws = XLSX.utils.aoa_to_sheet(data); const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Stock Balance');
+      XLSX.writeFile(wb, `Sea_Rock_Stock_${new Date().toISOString().split('T')[0]}.xlsx`);
+      toast('Excel exported', 'success');
+    }
+    function exportStockPDF() {
+      const entries = Object.entries(cache.stock).sort((a, b) => a[0].localeCompare(b[0]));
+      const html = `<html><head><style>body{font-family:Arial;padding:24px;color:#0f1f3d}h1{font-size:18px}p{font-size:12px;color:#718096;margin-bottom:12px}table{width:100%;border-collapse:collapse}th{background:#0f1f3d;color:white;padding:8px 12px;text-align:left;font-size:11px}td{padding:8px 12px;border-bottom:1px solid #dde3ee;font-size:12px}</style></head><body>
+  <h1>Sea Rock Villa — Stock Balance</h1><p>Generated: ${new Date().toLocaleString()}</p>
+  <table><tr><th>#</th><th>Product</th><th>Balance Qty</th><th>Status</th></tr>${entries.map(([p, q], i) => `<tr><td>${i + 1}</td><td>${p}</td><td>${q}</td><td>${q <= 0 ? 'Out of Stock' : q <= 10 ? 'Low Stock' : 'In Stock'}</td></tr>`).join('')}</table></body></html>`;
+      const win = window.open('', '_blank'); win.document.write(html); win.document.close(); win.print();
+    }
+    function exportIssueExcel() {
+      const from = document.getElementById('ir_from')?.value;
+      const to = document.getElementById('ir_to')?.value;
+      const propFilter = document.getElementById('ir_property')?.value || '';
+      const filtered = cache.issues.filter(r => {
+        if (from && r.date < from) return false; if (to && r.date > to) return false;
+        if (propFilter && r.property !== propFilter) return false;
+        if (reportTab !== 'all' && r.property !== reportTab) return false; return true;
+      });
+      const data = [['Date', 'Product', 'Property', 'Qty Issued', 'Closing Balance', 'Remark', 'By']];
+      filtered.forEach(r => data.push([r.date, r.product, r.property, r.qty, r.closingBalance, r.remark, r.user]));
+      const ws = XLSX.utils.aoa_to_sheet(data); const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Issue Report');
+      XLSX.writeFile(wb, `Sea_Rock_Issues_${new Date().toISOString().split('T')[0]}.xlsx`);
+      toast('Issue report exported', 'success');
+    }
 
-// ── Render All ────────────────────────────────────────────────────────
-function renderAll() {
-  renderAddHistory(''); renderIssueHistory(''); renderStockBalance('');
-  renderIssueReport(); renderAudit(''); updateAlertBadge();
-}
+    // ── Render All ────────────────────────────────────────────────────────
+    function renderAll() {
+      renderAddHistory(''); renderIssueHistory(''); renderStockBalance('');
+      renderIssueReport(); renderAudit(''); updateAlertBadge();
+    }
 
-// ── Utils ─────────────────────────────────────────────────────────────
-function formatDate(d) {
-  if(!d) return '-';
-  const [y,m,day]=d.split('-'); return `${day}-${m}-${y}`;
-}
-function formatDateTime(iso) {
-  if(!iso) return '-';
-  const d=new Date(iso);
-  return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'})
-       + ' ' + d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-}
-function toast(msg, type='') {
-  const container=document.getElementById('toast');
-  const el=document.createElement('div');
-  el.className=`toast-msg ${type}`;
-  el.innerHTML=`${type==='success'?'✅':type==='error'?'❌':type==='warning'?'⚠️':'ℹ️'} ${msg}`;
-  container.appendChild(el);
-  setTimeout(()=>el.remove(), 3500);
-}
-</script>
+    // ── Utils ─────────────────────────────────────────────────────────────
+    function formatDate(d) {
+      if (!d) return '-';
+      const [y, m, day] = d.split('-'); return `${day}-${m}-${y}`;
+    }
+    function formatDateTime(iso) {
+      if (!iso) return '-';
+      const d = new Date(iso);
+      return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
+        + ' ' + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    }
+    function toast(msg, type = '') {
+      const container = document.getElementById('toast');
+      const el = document.createElement('div');
+      el.className = `toast-msg ${type}`;
+      el.innerHTML = `${type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️'} ${msg}`;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }
+  </script>
 </body>
+
 </html>
