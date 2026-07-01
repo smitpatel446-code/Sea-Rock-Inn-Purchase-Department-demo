@@ -1431,37 +1431,102 @@
         <!-- ADD PRODUCT -->
         <div class="page" id="page-addProduct">
           <h2 class="page-title">Add Product</h2>
-          <p class="page-subtitle">Add stock / products into the central inventory</p>
+          <p class="page-subtitle">Manage stock entries — track opening balance, issues, purchases and closing balance</p>
           <div class="card">
-            <div class="card-title"><span>📦</span> New Stock Entry</div>
+            <div class="card-title"><span>📦</span> Stock Entry Form</div>
             <div id="addProductAlert"></div>
             <div class="form-grid">
-              <div class="form-group-inline">
-                <label class="form-label">Product Name</label>
-                <div class="autocomplete-wrapper">
-                  <input type="text" class="form-input" id="ap_product" placeholder="Type to search or create…"
-                    autocomplete="off" oninput="handleProductSearch(this.value,'ap_product_list',true)"
-                    onfocus="handleProductSearch(this.value,'ap_product_list',true)"
-                    onblur="setTimeout(()=>document.getElementById('ap_product_list').style.display='none',200)" />
-                  <div class="autocomplete-list" id="ap_product_list" style="display:none"></div>
-                </div>
-              </div>
-              <div class="form-group-inline">
-                <label class="form-label">Quantity</label>
-                <input type="number" class="form-input" id="ap_qty" placeholder="0" min="1" inputmode="numeric" />
-              </div>
+
+              <!-- Row 1: Date -->
               <div class="form-group-inline">
                 <label class="form-label">Date</label>
                 <input type="date" class="form-input" id="ap_date" />
               </div>
+
+              <!-- Row 2: Name of Item + Unit side by side -->
+              <div style="display:grid;grid-template-columns:1fr 140px;gap:10px">
+                <div class="form-group-inline">
+                  <label class="form-label">Name Of Item</label>
+                  <div class="autocomplete-wrapper">
+                    <input type="text" class="form-input" id="ap_product" placeholder="Type to search or create…"
+                      autocomplete="off" oninput="handleProductSearch(this.value,'ap_product_list',true);apLoadOpeningBalance()"
+                      onfocus="handleProductSearch(this.value,'ap_product_list',true)"
+                      onblur="setTimeout(()=>{document.getElementById('ap_product_list').style.display='none';apLoadOpeningBalance()},200)" />
+                    <div class="autocomplete-list" id="ap_product_list" style="display:none"></div>
+                  </div>
+                </div>
+                <div class="form-group-inline">
+                  <label class="form-label">Unit</label>
+                  <select class="form-input" id="ap_unit" onchange="apRecalc()">
+                    <option value="Packaged">Packaged</option>
+                    <option value="KG">KG</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Row 3: Opening Balance -->
+              <div class="form-group-inline">
+                <label class="form-label">Opening Balance</label>
+                <input type="number" class="form-input" id="ap_opening" placeholder="Enter opening balance" min="0" step="any" inputmode="decimal" oninput="apRecalc()" />
+                <div style="font-size:11px;color:var(--text-muted);margin-top:4px">💡 First-time: enter the initial stock quantity for this item.</div>
+              </div>
+
+              <!-- Row 4: Issue Item -->
+              <div style="background:rgba(14,148,136,0.04);border:1px solid rgba(14,148,136,0.15);border-radius:8px;padding:14px">
+                <div style="font-size:12px;font-weight:700;color:var(--teal);margin-bottom:10px;letter-spacing:0.3px">🏷️ ISSUE ITEM</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                  <div class="form-group-inline">
+                    <label class="form-label">Property</label>
+                    <select class="form-input" id="ap_issue_property">
+                      <option value="">-- Select Property --</option>
+                      <option value="Garbo">Garbo (Hotel Sea Rock Villa)</option>
+                      <option value="Odon">Odon (Hotel Tania Sea Rock)</option>
+                      <option value="Sheldon">Hotel Sheldon (Sea Rock Villa)</option>
+                    </select>
+                  </div>
+                  <div class="form-group-inline">
+                    <label class="form-label">Issue Quantity</label>
+                    <input type="number" class="form-input" id="ap_issue_qty" placeholder="0" min="0" step="any" inputmode="decimal" oninput="apRecalc()" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Row 5: Purchase of New Product -->
+              <div class="form-group-inline">
+                <label class="form-label">Purchase of New Product</label>
+                <input type="number" class="form-input" id="ap_purchase" placeholder="0" min="0" step="any" inputmode="decimal" oninput="apRecalc()" />
+                <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Enter quantity of new stock purchased (will be added to balance).</div>
+              </div>
+
+              <!-- Row 6: Closing Balance (auto) -->
+              <div class="form-group-inline">
+                <label class="form-label">Closing Balance <span style="font-size:10px;color:var(--text-muted);font-weight:400">(auto-calculated)</span></label>
+                <div id="ap_closing_display" style="padding:12px 14px;background:rgba(30,95,168,0.06);border:1.5px solid rgba(30,95,168,0.2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:600;color:var(--navy);">—</div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Formula: Opening Balance − Issue + Purchase = Closing Balance</div>
+                <input type="hidden" id="ap_closing" value="" />
+              </div>
+
+              <!-- Row 7: Rate + Final Amount -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div class="form-group-inline">
+                  <label class="form-label">Rate (per unit)</label>
+                  <input type="number" class="form-input" id="ap_rate" placeholder="₹ 0.00" min="0" step="any" inputmode="decimal" oninput="apRecalc()" />
+                </div>
+                <div class="form-group-inline">
+                  <label class="form-label">Final Amount <span style="font-size:10px;color:var(--text-muted);font-weight:400">(auto)</span></label>
+                  <div id="ap_amount_display" style="padding:12px 14px;background:rgba(14,148,136,0.06);border:1.5px solid rgba(14,148,136,0.2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:600;color:var(--teal);">₹ —</div>
+                  <input type="hidden" id="ap_final_amount" value="" />
+                </div>
+              </div>
+
             </div>
             <div style="margin-top:16px" class="btn-group">
-              <button class="btn btn-ocean" id="addProductBtn" onclick="addProduct()">➕ Add to Inventory</button>
+              <button class="btn btn-ocean" id="addProductBtn" onclick="addProduct()">💾 Save Entry</button>
               <button class="btn btn-outline" onclick="clearAddForm()">Clear</button>
             </div>
           </div>
           <div class="card resp-table">
-            <div class="card-title"><span>📋</span> Stock Added History</div>
+            <div class="card-title"><span>📋</span> Stock Entry History</div>
             <div class="filter-bar">
               <div class="form-group-inline" style="min-width:130px">
                 <label class="form-label">From Date</label>
@@ -1485,9 +1550,16 @@
                 <thead>
                   <tr>
                     <th>Date</th>
-                    <th>Product Name</th>
-                    <th>Qty Added</th>
-                    <th>Added By</th>
+                    <th>Name Of Item</th>
+                    <th>Unit</th>
+                    <th>Opening Bal.</th>
+                    <th>Issued</th>
+                    <th>Property</th>
+                    <th>Purchase</th>
+                    <th>Closing Bal.</th>
+                    <th>Rate (₹)</th>
+                    <th>Final Amt (₹)</th>
+                    <th>By</th>
                     <th class="no-print">Actions</th>
                   </tr>
                 </thead>
@@ -1506,7 +1578,11 @@
             <div id="issueProductAlert"></div>
             <div class="form-grid">
               <div class="form-group-inline">
-                <label class="form-label">Product Name</label>
+                <label class="form-label">Date</label>
+                <input type="date" class="form-input" id="ip_date" />
+              </div>
+              <div class="form-group-inline">
+                <label class="form-label">Name Of Item</label>
                 <div class="autocomplete-wrapper">
                   <input type="text" class="form-input" id="ip_product" placeholder="Select existing product…"
                     autocomplete="off"
@@ -1549,10 +1625,6 @@
                   <option value="Monthly Function"></option>
                   <option value="Other Remarks"></option>
                 </datalist>
-              </div>
-              <div class="form-group-inline">
-                <label class="form-label">Date</label>
-                <input type="date" class="form-input" id="ip_date" />
               </div>
             </div>
             <div style="margin-top:16px" class="btn-group">
@@ -1622,7 +1694,7 @@
                 <thead>
                   <tr>
                     <th>#</th>
-                    <th>Product Name</th>
+                    <th>Name Of Item</th>
                     <th>Balance Qty</th>
                     <th>Status</th>
                   </tr>
@@ -2037,12 +2109,8 @@
 
     // ── Dates ─────────────────────────────────────────────────────────────
     function setDefaultDates() {
-      const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, '0');
-      const dd = String(today.getDate()).padStart(2, '0');
-      const todayLocal = `${yyyy}-${mm}-${dd}`;
-      ['ap_date', 'ip_date'].forEach(id => { const el = document.getElementById(id); if (el) el.value = todayLocal; });
+      const today = new Date().toISOString().split('T')[0];
+      ['ap_date', 'ip_date'].forEach(id => { const el = document.getElementById(id); if (el) el.value = today; });
     }
 
     // ── Autocomplete ──────────────────────────────────────────────────────
@@ -2103,6 +2171,43 @@
       else alertEl.innerHTML = '';
     }
 
+    // ── Add Product Recalculation Helpers ──────────────────────────────────
+    function apRecalc() {
+      const opening = parseFloat(document.getElementById('ap_opening')?.value) || 0;
+      const issue   = parseFloat(document.getElementById('ap_issue_qty')?.value) || 0;
+      const purchase = parseFloat(document.getElementById('ap_purchase')?.value) || 0;
+      const rate    = parseFloat(document.getElementById('ap_rate')?.value) || 0;
+
+      const closing = opening - issue + purchase;
+      const finalAmt = closing * rate;
+
+      const closingDisplay = document.getElementById('ap_closing_display');
+      const amountDisplay  = document.getElementById('ap_amount_display');
+      const closingHidden  = document.getElementById('ap_closing');
+      const amountHidden   = document.getElementById('ap_final_amount');
+
+      if (closingDisplay) {
+        closingDisplay.textContent = closing % 1 === 0 ? closing : closing.toFixed(2);
+        closingDisplay.style.color = closing < 0 ? 'var(--danger)' : 'var(--navy)';
+      }
+      if (amountDisplay) {
+        amountDisplay.textContent = rate > 0 ? '\u20b9 ' + (finalAmt % 1 === 0 ? finalAmt : finalAmt.toFixed(2)) : '\u20b9 \u2014';
+      }
+      if (closingHidden) closingHidden.value = closing;
+      if (amountHidden)  amountHidden.value  = rate > 0 ? finalAmt : '';
+    }
+
+    function apLoadOpeningBalance() {
+      // When an existing product is selected, pre-fill opening balance with current stock
+      const product = document.getElementById('ap_product')?.value.trim();
+      const openingEl = document.getElementById('ap_opening');
+      if (!openingEl) return;
+      if (product && getAllProducts().includes(product) && !openingEl.value) {
+        openingEl.value = getBalance(product);
+        apRecalc();
+      }
+    }
+
     // ── Add Product ───────────────────────────────────────────────────────
     let editingAddId = null;
 
@@ -2111,37 +2216,79 @@
         toast('❌ Access denied: Staff cannot add products.', 'error');
         return;
       }
-      const date = document.getElementById('ap_date').value;
-      const product = document.getElementById('ap_product').value.trim();
-      const qty = parseInt(document.getElementById('ap_qty').value) || 0;
-      const alertEl = document.getElementById('addProductAlert');
-      const btn = document.getElementById('addProductBtn');
-      if (!date || !product || qty <= 0) { alertEl.innerHTML = '<div class="alert alert-error">❌ Please fill all fields with valid values.</div>'; return; }
-      btn.disabled = true; btn.innerHTML = '<span class="inline-spinner"></span> Saving…';
+      const date          = document.getElementById('ap_date').value;
+      const product       = document.getElementById('ap_product').value.trim();
+      const unit          = document.getElementById('ap_unit').value;
+      const opening       = parseFloat(document.getElementById('ap_opening').value);
+      const issueQty      = parseFloat(document.getElementById('ap_issue_qty').value) || 0;
+      const issueProperty = document.getElementById('ap_issue_property').value;
+      const purchase      = parseFloat(document.getElementById('ap_purchase').value) || 0;
+      const rate          = parseFloat(document.getElementById('ap_rate').value) || 0;
+      const closingVal    = parseFloat(document.getElementById('ap_closing').value);
+      const finalAmt      = parseFloat(document.getElementById('ap_final_amount').value) || 0;
+      const alertEl       = document.getElementById('addProductAlert');
+      const btn           = document.getElementById('addProductBtn');
+
+      if (!date || !product) {
+        alertEl.innerHTML = '<div class="alert alert-error">❌ Please fill in Date and Name Of Item.</div>';
+        return;
+      }
+      if (isNaN(opening)) {
+        alertEl.innerHTML = '<div class="alert alert-error">❌ Please enter the Opening Balance.</div>';
+        return;
+      }
+      const closing = opening - issueQty + purchase;
+
+      btn.disabled = true; btn.innerHTML = '<span class="inline-spinner"></span> Saving\u2026';
       try {
-        const newQty = (cache.stock[product] || 0) + qty;
-        cache.stock[product] = newQty;
+        // Update the central stock to the new closing balance for this product
+        cache.stock[product] = Math.max(0, closing);
         await db.collection('config').doc('stock').set(cache.stock);
+
         const ts = new Date().toISOString();
-        const histEntry = { date, product, qty, user: currentUser.name || currentUser.email, timestamp: ts };
+        const userName = currentUser.name || currentUser.email;
+        const histEntry = {
+          date, product, unit,
+          opening, issueQty, issueProperty: issueProperty || '-',
+          purchase, closing, rate, finalAmount: finalAmt,
+          user: userName, timestamp: ts
+        };
         const hRef = await db.collection('addHistory').add(histEntry);
         cache.addHistory.unshift({ id: hRef.id, ...histEntry });
-        const auditEntry = { datetime: ts, action: 'Product Added', product, qty, property: '-', remark: '-', user: histEntry.user, timestamp: ts };
+
+        const auditEntry = {
+          datetime: ts, action: 'Product Added',
+          product, qty: closing, property: issueProperty || '-',
+          remark: `Opening:${opening} | Issued:${issueQty} | Purchase:${purchase} | Closing:${closing}`,
+          user: userName, timestamp: ts
+        };
         const aRef = await db.collection('audit').add(auditEntry);
         cache.audit.unshift({ id: aRef.id, ...auditEntry });
-        alertEl.innerHTML = `<div class="alert alert-success">✅ ${product} (${qty} units) added. New balance: ${newQty}</div>`;
-        toast(`${product} added — Balance: ${newQty}`, 'success');
+
+        alertEl.innerHTML = `<div class="alert alert-success">✅ Entry saved — Closing Balance: <strong>${closing}</strong>${rate > 0 ? ` | Final Amount: ₹${finalAmt}` : ''}</div>`;
+        toast(`${product} saved — Closing: ${closing}`, 'success');
         clearAddForm(); renderAddHistory(''); updateAlertBadge();
       } catch (err) {
         console.error(err);
         alertEl.innerHTML = '<div class="alert alert-error">❌ Save failed. Check internet and try again.</div>';
       }
-      btn.disabled = false; btn.innerHTML = '➕ Add to Inventory';
+      btn.disabled = false; btn.innerHTML = '💾 Save Entry';
     }
 
     function clearAddForm() {
       document.getElementById('ap_product').value = '';
-      document.getElementById('ap_qty').value = '';
+      document.getElementById('ap_unit').value = 'Packaged';
+      document.getElementById('ap_opening').value = '';
+      document.getElementById('ap_issue_qty').value = '';
+      document.getElementById('ap_issue_property').value = '';
+      document.getElementById('ap_purchase').value = '';
+      document.getElementById('ap_rate').value = '';
+      document.getElementById('ap_closing').value = '';
+      document.getElementById('ap_final_amount').value = '';
+      const cd = document.getElementById('ap_closing_display');
+      const ad = document.getElementById('ap_amount_display');
+      if (cd) cd.textContent = '\u2014';
+      if (ad) ad.textContent = '\u20b9 \u2014';
       setDefaultDates();
     }
 
@@ -2158,19 +2305,36 @@
         return true;
       });
 
-      tbody.innerHTML = filtered.length ? filtered.map(r => `
+      tbody.innerHTML = filtered.length ? filtered.map(r => {
+        const closingVal = r.closing !== undefined ? r.closing : (r.qty || 0);
+        const openingVal = r.opening !== undefined ? r.opening : '-';
+        const issueQty   = r.issueQty !== undefined ? r.issueQty : '-';
+        const purchase   = r.purchase !== undefined ? r.purchase : '-';
+        const rate       = r.rate !== undefined && r.rate > 0 ? '\u20b9' + r.rate : '-';
+        const finalAmt   = r.finalAmount !== undefined && r.finalAmount > 0 ? '\u20b9' + r.finalAmount : '-';
+        const unit       = r.unit || '-';
+        const property   = r.issueProperty || '-';
+        return `
     <tr>
       <td data-label="Date">${formatDate(r.date)}</td>
       <td data-label="Product"><strong>${r.product}</strong></td>
-      <td data-label="Qty Added"><span class="qty-pill">${r.qty}</span></td>
-      <td data-label="Added By">${r.user}</td>
+      <td data-label="Unit"><span style="background:rgba(30,95,168,0.1);color:var(--ocean);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">${unit}</span></td>
+      <td data-label="Opening Bal."><span class="qty-pill">${openingVal}</span></td>
+      <td data-label="Issued"><span class="qty-pill issued">${issueQty}</span></td>
+      <td data-label="Property">${property !== '-' ? `<span class="property-tag prop-${property.toLowerCase()}">${property}</span>` : '-'}</td>
+      <td data-label="Purchase"><span class="qty-pill" style="background:rgba(14,148,136,0.08);color:var(--teal)">${purchase}</span></td>
+      <td data-label="Closing Bal."><span class="qty-pill ${closingVal <= 0 ? 'empty' : closingVal <= 10 ? 'low' : ''}">${closingVal}</span></td>
+      <td data-label="Rate">${rate}</td>
+      <td data-label="Final Amt"><strong style="color:var(--teal)">${finalAmt}</strong></td>
+      <td data-label="By">${r.user}</td>
       <td data-label="Actions" class="no-print">
         <div class="btn-group" style="gap:4px">
           <button class="btn btn-outline btn-sm" onclick="startEditAddHistory('${r.id}')" style="min-height:30px;padding:4px 8px;font-size:11px">✏️ Edit</button>
           <button class="btn btn-danger btn-sm" onclick="deleteAddHistory('${r.id}')" style="min-height:30px;padding:4px 8px;font-size:11px">🗑️ Delete</button>
         </div>
       </td>
-    </tr>`).join('') : `<tr><td colspan="5"><div class="empty-state"><div class="icon">📦</div><p>No stock additions yet</p></div></td></tr>`;
+    </tr>`;
+      }).join('') : `<tr><td colspan="12"><div class="empty-state"><div class="icon">📦</div><p>No stock entries yet</p></div></td></tr>`;
     }
 
     // ── Add Product Edit / Delete ─────────────────────────────────────────
@@ -2181,7 +2345,13 @@
       editingAddId = id;
       document.getElementById('ap_date').value = entry.date;
       document.getElementById('ap_product').value = entry.product;
-      document.getElementById('ap_qty').value = entry.qty;
+      document.getElementById('ap_unit').value = entry.unit || 'Packaged';
+      document.getElementById('ap_opening').value = entry.opening !== undefined ? entry.opening : '';
+      document.getElementById('ap_issue_qty').value = entry.issueQty || '';
+      document.getElementById('ap_issue_property').value = entry.issueProperty || '';
+      document.getElementById('ap_purchase').value = entry.purchase || '';
+      document.getElementById('ap_rate').value = entry.rate || '';
+      apRecalc();
 
       const addBtn = document.getElementById('addProductBtn');
       addBtn.innerHTML = '💾 Update Entry';
@@ -2216,14 +2386,22 @@
 
     async function updateAddProduct() {
       if (!editingAddId) return;
-      const date = document.getElementById('ap_date').value;
-      const product = document.getElementById('ap_product').value.trim();
-      const qty = parseInt(document.getElementById('ap_qty').value) || 0;
+      const date          = document.getElementById('ap_date').value;
+      const product       = document.getElementById('ap_product').value.trim();
+      const unit          = document.getElementById('ap_unit').value;
+      const opening       = parseFloat(document.getElementById('ap_opening').value);
+      const issueQty      = parseFloat(document.getElementById('ap_issue_qty').value) || 0;
+      const issueProperty = document.getElementById('ap_issue_property').value;
+      const purchase      = parseFloat(document.getElementById('ap_purchase').value) || 0;
+      const rate          = parseFloat(document.getElementById('ap_rate').value) || 0;
 
-      if (!date || !product || qty <= 0) {
-        alert('Please fill all fields with valid values.');
+      if (!date || !product || isNaN(opening)) {
+        alert('Please fill in Date, Name Of Item, and Opening Balance.');
         return;
       }
+
+      const closing  = opening - issueQty + purchase;
+      const finalAmt = closing * rate;
 
       const entry = cache.addHistory.find(h => h.id === editingAddId);
       if (!entry) return;
@@ -2233,33 +2411,31 @@
       addBtn.innerHTML = '<span class="inline-spinner"></span> Updating...';
 
       try {
-        const oldQty = entry.qty;
+        // Revert old closing from stock, apply new closing
+        const oldClosing = entry.closing !== undefined ? entry.closing : (entry.qty || 0);
         const oldProduct = entry.product;
-
-        // Revert old quantity from old product
-        cache.stock[oldProduct] = Math.max(0, (cache.stock[oldProduct] || 0) - oldQty);
-        // Add new quantity to new product
-        cache.stock[product] = (cache.stock[product] || 0) + qty;
+        cache.stock[oldProduct] = Math.max(0, (cache.stock[oldProduct] || 0) - oldClosing);
+        cache.stock[product]    = (cache.stock[product] || 0) + closing;
 
         await db.collection('config').doc('stock').set(cache.stock);
 
         const userName = currentUser.name || currentUser.email;
-        const updatedEntry = { date, product, qty, user: userName };
+        const updatedEntry = { date, product, unit, opening, issueQty, issueProperty: issueProperty || '-', purchase, closing, rate, finalAmount: finalAmt, user: userName };
         await db.collection('addHistory').doc(editingAddId).update(updatedEntry);
 
         Object.assign(entry, updatedEntry);
 
         const ts = new Date().toISOString();
-        const auditEntry = { datetime: ts, action: 'Add History Edited', product, qty: `${oldQty} ➔ ${qty}`, property: '-', remark: `Edited entry of ${oldProduct}`, user: userName, timestamp: ts };
+        const auditEntry = { datetime: ts, action: 'Add History Edited', product, qty: closing, property: issueProperty || '-', remark: `Opening:${opening}|Issue:${issueQty}|Purchase:${purchase}|Closing:${closing}`, user: userName, timestamp: ts };
         const aRef = await db.collection('audit').add(auditEntry);
         cache.audit.unshift({ id: aRef.id, ...auditEntry });
 
-        toast("Stock entry updated successfully.", "success");
+        toast('Stock entry updated successfully.', 'success');
         cancelAddEdit();
         renderAll();
       } catch (e) {
         console.error(e);
-        toast("❌ Failed to update entry.", "error");
+        toast('❌ Failed to update entry.', 'error');
         addBtn.disabled = false;
         addBtn.innerHTML = '💾 Update Entry';
       }
@@ -2312,14 +2488,26 @@
         return true;
       });
 
-      const data = [['Date', 'Product Name', 'Quantity Added', 'Added By']];
-      filtered.forEach(r => data.push([r.date, r.product, r.qty, r.user]));
+      const data = [['Date', 'Name Of Item', 'Unit', 'Opening Balance', 'Issue Qty', 'Issue Property', 'Purchase', 'Closing Balance', 'Rate (Rs)', 'Final Amount (Rs)', 'Entry By']];
+      filtered.forEach(r => data.push([
+        r.date,
+        r.product,
+        r.unit || '-',
+        r.opening !== undefined ? r.opening : '-',
+        r.issueQty !== undefined ? r.issueQty : '-',
+        r.issueProperty || '-',
+        r.purchase !== undefined ? r.purchase : '-',
+        r.closing !== undefined ? r.closing : (r.qty || 0),
+        r.rate || '-',
+        r.finalAmount || '-',
+        r.user
+      ]));
 
       const ws = XLSX.utils.aoa_to_sheet(data);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Stock Added History');
-      XLSX.writeFile(wb, `Sea_Rock_Stock_Added_${new Date().toISOString().split('T')[0]}.xlsx`);
-      toast('Stock addition history exported', 'success');
+      XLSX.utils.book_append_sheet(wb, ws, 'Stock Entry History');
+      XLSX.writeFile(wb, `Sea_Rock_Stock_Entry_${new Date().toISOString().split('T')[0]}.xlsx`);
+      toast('Stock entry history exported', 'success');
     }
 
     // ── Issue Product ─────────────────────────────────────────────────────
@@ -2555,7 +2743,7 @@
         return true;
       });
 
-      const data = [['Date', 'Product Name', 'Property', 'Quantity Issued', 'Closing Balance', 'Remark', 'Issued By']];
+      const data = [['Date', 'Name Of Item', 'Property', 'Quantity Issued', 'Closing Balance', 'Remark', 'Issued By']];
       filtered.forEach(r => data.push([r.date, r.product, r.property, r.qty, r.closingBalance, r.remark, r.user]));
 
       const ws = XLSX.utils.aoa_to_sheet(data);
@@ -2779,7 +2967,7 @@
 
     // ── Export ────────────────────────────────────────────────────────────
     function exportStockExcel() {
-      const data = [['#', 'Product Name', 'Balance Quantity', 'Status']];
+      const data = [['#', 'Name Of Item', 'Balance Quantity', 'Status']];
       Object.entries(cache.stock).sort((a, b) => a[0].localeCompare(b[0])).forEach(([p, q], i) => data.push([i + 1, p, q, q <= 0 ? 'Out of Stock' : q <= 10 ? 'Low Stock' : 'In Stock']));
       const ws = XLSX.utils.aoa_to_sheet(data); const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Stock Balance');
