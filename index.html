@@ -1607,11 +1607,35 @@
                   <span class="balance-badge">— Select product</span>
                 </div>
               </div>
-              <div class="form-group-inline">
-                <label class="form-label">Quantity to Issue</label>
-                <input type="number" class="form-input" id="ip_qty" placeholder="0" min="1" inputmode="numeric"
-                  oninput="validateIssueQty()" />
+              <!-- Unit + Value side by side -->
+              <div style="display:grid;grid-template-columns:140px 1fr;gap:10px">
+                <div class="form-group-inline">
+                  <label class="form-label">Unit</label>
+                  <select class="form-input" id="ip_unit" onchange="ipRecalc()">
+                    <option value="Package">Package</option>
+                    <option value="KG">KG</option>
+                  </select>
+                </div>
+                <div class="form-group-inline">
+                  <label class="form-label">Quantity to Issue</label>
+                  <input type="number" class="form-input" id="ip_qty" placeholder="0" min="0" step="any" inputmode="decimal"
+                    oninput="validateIssueQty();ipRecalc()" />
+                </div>
               </div>
+
+              <!-- Rate + Final Amount side by side -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div class="form-group-inline">
+                  <label class="form-label">Rate (per unit)</label>
+                  <input type="number" class="form-input" id="ip_rate" placeholder="₹ 0.00" min="0" step="any" inputmode="decimal" oninput="ipRecalc()" />
+                </div>
+                <div class="form-group-inline">
+                  <label class="form-label">Final Amount <span style="font-size:10px;color:var(--text-muted);font-weight:400">(auto)</span></label>
+                  <div id="ip_amount_display" style="padding:12px 14px;background:rgba(14,148,136,0.06);border:1.5px solid rgba(14,148,136,0.2);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:600;color:var(--teal);">₹ —</div>
+                  <input type="hidden" id="ip_final_amount" value="" />
+                </div>
+              </div>
+
               <div class="form-group-inline">
                 <label class="form-label">Remark</label>
                 <input type="text" class="form-input" id="ip_remark" list="remark_options"
@@ -1659,7 +1683,10 @@
                     <th>Date</th>
                     <th>Product</th>
                     <th>Property</th>
-                    <th>Qty</th>
+                    <th>Unit</th>
+                    <th>Qty Issued</th>
+                    <th>Rate (₹)</th>
+                    <th>Final Amt (₹)</th>
                     <th>Closing Bal.</th>
                     <th>Remark</th>
                     <th>By</th>
@@ -2510,6 +2537,17 @@
       toast('Stock entry history exported', 'success');
     }
 
+    // ── Issue Product Recalc Helper ───────────────────────────────────────
+    function ipRecalc() {
+      const qty   = parseFloat(document.getElementById('ip_qty')?.value) || 0;
+      const rate  = parseFloat(document.getElementById('ip_rate')?.value) || 0;
+      const amt   = qty * rate;
+      const display = document.getElementById('ip_amount_display');
+      const hidden  = document.getElementById('ip_final_amount');
+      if (display) display.textContent = rate > 0 ? '\u20b9 ' + (amt % 1 === 0 ? amt : amt.toFixed(2)) : '\u20b9 \u2014';
+      if (hidden)  hidden.value = rate > 0 ? amt : '';
+    }
+
     // ── Issue Product ─────────────────────────────────────────────────────
     let editingIssueId = null;
 
@@ -2518,17 +2556,30 @@
         toast('❌ Access denied: Staff cannot issue products.', 'error');
         return;
       }
-      const date = document.getElementById('ip_date').value;
-      const product = document.getElementById('ip_product').value.trim();
+      const date     = document.getElementById('ip_date').value;
+      const product  = document.getElementById('ip_product').value.trim();
       const property = document.getElementById('ip_property').value;
-      const qty = parseInt(document.getElementById('ip_qty').value) || 0;
-      const remark = document.getElementById('ip_remark').value;
-      const alertEl = document.getElementById('issueProductAlert');
-      const btn = document.getElementById('issueProductBtn');
-      if (!date || !product || !property || qty <= 0) { alertEl.innerHTML = '<div class="alert alert-error">❌ Please fill all required fields.</div>'; return; }
-      if (!getAllProducts().includes(product)) { alertEl.innerHTML = '<div class="alert alert-error">❌ Product not found. Add it to inventory first.</div>'; return; }
+      const unit     = document.getElementById('ip_unit').value;
+      const qty      = parseFloat(document.getElementById('ip_qty').value) || 0;
+      const rate     = parseFloat(document.getElementById('ip_rate').value) || 0;
+      const finalAmt = parseFloat(document.getElementById('ip_final_amount').value) || 0;
+      const remark   = document.getElementById('ip_remark').value;
+      const alertEl  = document.getElementById('issueProductAlert');
+      const btn      = document.getElementById('issueProductBtn');
+
+      if (!date || !product || !property || qty <= 0) {
+        alertEl.innerHTML = '<div class="alert alert-error">❌ Please fill all required fields (Date, Product, Property, Quantity).</div>';
+        return;
+      }
+      if (!getAllProducts().includes(product)) {
+        alertEl.innerHTML = '<div class="alert alert-error">❌ Product not found. Add it to inventory first.</div>';
+        return;
+      }
       const balance = getBalance(product);
-      if (qty > balance) { alertEl.innerHTML = `<div class="alert alert-error">❌ Insufficient stock. Available: ${balance}, Requested: ${qty}</div>`; return; }
+      if (qty > balance) {
+        alertEl.innerHTML = `<div class="alert alert-error">❌ Insufficient stock. Available: ${balance}, Requested: ${qty}</div>`;
+        return;
+      }
       btn.disabled = true; btn.innerHTML = '<span class="inline-spinner"></span> Saving…';
       try {
         const newBalance = balance - qty;
@@ -2536,14 +2587,20 @@
         await db.collection('config').doc('stock').set(cache.stock);
         const ts = new Date().toISOString();
         const userName = currentUser.name || currentUser.email;
-        const issueEntry = { date, product, property, qty, closingBalance: newBalance, remark: remark || 'N/A', user: userName, timestamp: ts };
+        const issueEntry = {
+          date, product, property, unit, qty, rate, finalAmount: finalAmt,
+          closingBalance: newBalance, remark: remark || 'N/A', user: userName, timestamp: ts
+        };
         const iRef = await db.collection('issues').add(issueEntry);
         cache.issues.unshift({ id: iRef.id, ...issueEntry });
-        const auditEntry = { datetime: ts, action: 'Product Issued', product, qty, property, remark: remark || 'N/A', user: userName, timestamp: ts };
+        const auditEntry = {
+          datetime: ts, action: 'Product Issued', product, qty, property,
+          remark: remark || 'N/A', user: userName, timestamp: ts
+        };
         const aRef = await db.collection('audit').add(auditEntry);
         cache.audit.unshift({ id: aRef.id, ...auditEntry });
-        alertEl.innerHTML = `<div class="alert alert-success">✅ ${product} (${qty} units) issued to ${property}. Closing balance: ${newBalance}</div>`;
-        toast(`Issued ${qty}× ${product} → ${property}`, 'success');
+        alertEl.innerHTML = `<div class="alert alert-success">✅ ${product} (${qty} ${unit}) issued to ${property}. Closing balance: ${newBalance}${rate > 0 ? ` | Amount: ₹${finalAmt}` : ''}</div>`;
+        toast(`Issued ${qty} ${unit} × ${product} → ${property}`, 'success');
         if (newBalance <= 10) toast(`⚠️ Low stock: ${product} has only ${newBalance} units left`, 'warning');
         clearIssueForm(); renderIssueHistory(''); updateAlertBadge();
       } catch (err) {
@@ -2556,8 +2613,13 @@
     function clearIssueForm() {
       document.getElementById('ip_product').value = '';
       document.getElementById('ip_property').value = '';
+      document.getElementById('ip_unit').value = 'Package';
       document.getElementById('ip_qty').value = '';
+      document.getElementById('ip_rate').value = '';
+      document.getElementById('ip_final_amount').value = '';
       document.getElementById('ip_remark').value = '';
+      const ad = document.getElementById('ip_amount_display');
+      if (ad) ad.textContent = '\u20b9 \u2014';
       document.getElementById('issueBalanceDisplay').innerHTML = '<span class="balance-badge">— Select product</span>';
       setDefaultDates();
     }
@@ -2575,12 +2637,19 @@
         return true;
       });
 
-      tbody.innerHTML = filtered.length ? filtered.map(r => `
+      tbody.innerHTML = filtered.length ? filtered.map(r => {
+        const unit     = r.unit || '-';
+        const rate     = r.rate > 0 ? '\u20b9' + r.rate : '-';
+        const finalAmt = r.finalAmount > 0 ? '\u20b9' + r.finalAmount : '-';
+        return `
     <tr>
       <td data-label="Date">${formatDate(r.date)}</td>
       <td data-label="Product"><strong>${r.product}</strong></td>
       <td data-label="Property"><span class="property-tag prop-${r.property.toLowerCase()}">${r.property}</span></td>
-      <td data-label="Qty"><span class="qty-pill issued">${r.qty}</span></td>
+      <td data-label="Unit"><span style="background:rgba(30,95,168,0.1);color:var(--ocean);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">${unit}</span></td>
+      <td data-label="Qty Issued"><span class="qty-pill issued">${r.qty}</span></td>
+      <td data-label="Rate">${rate}</td>
+      <td data-label="Final Amt"><strong style="color:var(--teal)">${finalAmt}</strong></td>
       <td data-label="Closing Bal."><span class="qty-pill ${r.closingBalance <= 0 ? 'empty' : r.closingBalance <= 10 ? 'low' : ''}">${r.closingBalance}</span></td>
       <td data-label="Remark">${r.remark}</td>
       <td data-label="By">${r.user}</td>
@@ -2590,7 +2659,8 @@
           <button class="btn btn-danger btn-sm" onclick="deleteIssueHistory('${r.id}')" style="min-height:30px;padding:4px 8px;font-size:11px">🗑️ Delete</button>
         </div>
       </td>
-    </tr>`).join('') : `<tr><td colspan="8"><div class="empty-state"><div class="icon">🏷️</div><p>No issues recorded yet</p></div></td></tr>`;
+    </tr>`;
+      }).join('') : `<tr><td colspan="11"><div class="empty-state"><div class="icon">🏷️</div><p>No issues recorded yet</p></div></td></tr>`;
     }
 
     // ── Issue Product Edit / Delete ───────────────────────────────────────
@@ -2602,8 +2672,11 @@
       document.getElementById('ip_date').value = entry.date;
       document.getElementById('ip_product').value = entry.product;
       document.getElementById('ip_property').value = entry.property;
+      document.getElementById('ip_unit').value = entry.unit || 'Package';
       document.getElementById('ip_qty').value = entry.qty;
+      document.getElementById('ip_rate').value = entry.rate || '';
       document.getElementById('ip_remark').value = entry.remark;
+      ipRecalc();
 
       const issueBtn = document.getElementById('issueProductBtn');
       issueBtn.innerHTML = '💾 Update Issue';
@@ -2639,11 +2712,14 @@
 
     async function updateIssueProduct() {
       if (!editingIssueId) return;
-      const date = document.getElementById('ip_date').value;
-      const product = document.getElementById('ip_product').value.trim();
+      const date     = document.getElementById('ip_date').value;
+      const product  = document.getElementById('ip_product').value.trim();
       const property = document.getElementById('ip_property').value;
-      const qty = parseInt(document.getElementById('ip_qty').value) || 0;
-      const remark = document.getElementById('ip_remark').value;
+      const unit     = document.getElementById('ip_unit').value;
+      const qty      = parseFloat(document.getElementById('ip_qty').value) || 0;
+      const rate     = parseFloat(document.getElementById('ip_rate').value) || 0;
+      const finalAmt = parseFloat(document.getElementById('ip_final_amount').value) || 0;
+      const remark   = document.getElementById('ip_remark').value;
 
       if (!date || !product || !property || qty <= 0) {
         alert('Please fill all required fields.');
@@ -2675,7 +2751,10 @@
         await db.collection('config').doc('stock').set(cache.stock);
 
         const userName = currentUser.name || currentUser.email;
-        const updatedEntry = { date, product, property, qty, closingBalance: cache.stock[product], remark: remark || 'N/A', user: userName };
+        const updatedEntry = {
+          date, product, property, unit, qty, rate, finalAmount: finalAmt,
+          closingBalance: cache.stock[product], remark: remark || 'N/A', user: userName
+        };
         await db.collection('issues').doc(editingIssueId).update(updatedEntry);
 
         Object.assign(entry, updatedEntry);
@@ -2743,8 +2822,16 @@
         return true;
       });
 
-      const data = [['Date', 'Name Of Item', 'Property', 'Quantity Issued', 'Closing Balance', 'Remark', 'Issued By']];
-      filtered.forEach(r => data.push([r.date, r.product, r.property, r.qty, r.closingBalance, r.remark, r.user]));
+      const data = [['Date', 'Name Of Item', 'Property', 'Unit', 'Qty Issued', 'Rate (Rs)', 'Final Amount (Rs)', 'Closing Balance', 'Remark', 'Issued By']];
+      filtered.forEach(r => data.push([
+        r.date, r.product, r.property,
+        r.unit || '-',
+        r.qty,
+        r.rate || '-',
+        r.finalAmount || '-',
+        r.closingBalance,
+        r.remark, r.user
+      ]));
 
       const ws = XLSX.utils.aoa_to_sheet(data);
       const wb = XLSX.utils.book_new();
